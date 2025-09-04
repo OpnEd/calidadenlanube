@@ -28,6 +28,11 @@ class Setting extends Page implements HasForms
 
     protected static string $view = 'filament.pages.setting';
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     public function mount(): void
     {
         // Get the current tenant

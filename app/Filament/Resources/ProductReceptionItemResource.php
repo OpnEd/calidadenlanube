@@ -17,7 +17,7 @@ class ProductReceptionItemResource extends Resource
 {
     protected static ?string $model = ProductReceptionItem::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    //protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $tenantOwnershipRelationshipName = 'productReception';
     protected static ?string $slug = 'parangaricutirimicuarelamemte-product-resource-items';
 

@@ -23,7 +23,7 @@ class SaleResource extends Resource
 {
     protected static ?string $model = Sale::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Transacciones';
 
     public static function form(Form $form): Form
     {

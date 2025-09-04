@@ -17,7 +17,7 @@ class ProductReceptionResource extends Resource
 {
     protected static ?string $model = ProductReception::class;
 
-    protected static ?string $navigationIcon = 'phosphor-hand-arrow-down';
+    protected static ?string $navigationGroup = 'Transacciones';
 
     public static function form(Form $form): Form
     {

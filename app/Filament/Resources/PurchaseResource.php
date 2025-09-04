@@ -24,7 +24,7 @@ class PurchaseResource extends Resource
 {
     protected static ?string $model = Purchase::class;
 
-    protected static ?string $navigationIcon = 'phosphor-shopping-bag-open';
+    protected static ?string $navigationGroup = 'Transacciones';
 
     public static function getNavigationBadge(): ?string
     {

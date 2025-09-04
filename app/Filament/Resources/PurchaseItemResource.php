@@ -17,7 +17,7 @@ class PurchaseItemResource extends Resource
 {
     protected static ?string $model = PurchaseItem::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    //protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $tenantOwnershipRelationshipName = 'purchase';
     protected static ?string $slug = 'parangaricutirimicuarelamemte';
 

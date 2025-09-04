@@ -17,7 +17,7 @@ class SaleItemResource extends Resource
 {
     protected static ?string $model = SaleItem::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    //protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $tenantOwnershipRelationshipName = 'purchase';
     protected static ?string $slug = 'parangaricutirimicuarelamemte-sale-items';
 

@@ -19,9 +19,9 @@ class EnvironmentalRecordResource extends Resource
 {
     protected static ?string $model = EnvironmentalRecord::class;
     
-    protected static ?string $navigationGroup = 'Condiciones Ambientales';
+    protected static ?string $navigationGroup = 'Registros Ambientales';
     protected static ?string $navigationLabel = 'Temperatura y Humedad';
-    protected static ?string $navigationIcon = 'phosphor-thermometer-hot';
+    //protected static ?string $navigationIcon = 'phosphor-thermometer-hot';
     protected static ?string $recordTitleAttribute = 'temp';
     protected static ?string $slug = 'variables-ambientales';
 

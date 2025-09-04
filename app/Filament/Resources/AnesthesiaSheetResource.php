@@ -14,12 +14,13 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Forms\Components\Actions\Action;
 
 class AnesthesiaSheetResource extends Resource
 {
     protected static ?string $model = AnesthesiaSheet::class;
 
-    protected static ?string $navigationIcon = 'phosphor-syringe';
+    protected static ?string $navigationGroup = 'Clínica';
 
     public static function form(Form $form): Form
     {
@@ -31,6 +32,7 @@ class AnesthesiaSheetResource extends Resource
                         Forms\Components\TextInput::make('recipe_number')
                             ->label(__('Recipe number'))
                             ->visible(fn() => self::userHasDirectorTecnicoRole()),
+
                         Forms\Components\Select::make('customer_id')
                             ->relationship('customer', 'identification')
                             ->required()
@@ -41,11 +43,12 @@ class AnesthesiaSheetResource extends Resource
                             ->relationship(
                                 name: 'pet',
                                 titleAttribute: 'name',
-                                modifyQueryUsing: function ($query, $get) {
+                                modifyQueryUsing: function ($query, Get $get) {
                                     $customerId = $get('customer_id');
                                     if ($customerId) {
                                         $query->where('customer_id', $customerId);
                                     } else {
+                                        // evita listar mascotas si no hay cliente seleccionado
                                         $query->whereRaw('0 = 1');
                                     }
                                 }
@@ -53,8 +56,48 @@ class AnesthesiaSheetResource extends Resource
                             ->preload()
                             ->required()
                             ->searchable()
-                            ->disabled(fn($get) => !$get('customer_id'))
-                            ->live(),
+                            ->disabled(fn(Get $get) => blank($get('customer_id')))
+                            ->live()
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('name')
+                                    ->required()
+                                    ->maxLength(255),
+
+                                Forms\Components\Select::make('species')
+                                    ->options([
+                                        'dog' => __('Dog'),
+                                        'cat' => __('Cat'),
+                                        'bird' => __('Bird'),
+                                        'reptile' => __('Reptile'),
+                                        'other' => __('Other'),
+                                    ])
+                                    ->required(),
+
+                                Forms\Components\Select::make('gender')
+                                    ->options([
+                                        'male' => __('Male'),
+                                        'female' => __('Female'),
+                                        'other' => __('Other'),
+                                    ])
+                                    ->required(),
+
+                                Forms\Components\DatePicker::make('birth_date')
+                                    ->required(),
+
+                                Forms\Components\TextInput::make('weight')
+                                    ->label('Peso (kg)')
+                                    ->numeric(),
+                            ])
+                            ->createOptionAction(function (Action $action) {
+                                return $action
+                                    // Evita crear una mascota si no hay cliente seleccionado arriba
+                                    ->visible(fn(Get $get) => filled($get('customer_id')))
+                                    // 🔑 Inyecta el customer_id del formulario padre en los datos del createOptionForm
+                                    ->mutateFormDataUsing(function (array $data, Get $get): array {
+                                        $data['customer_id'] = $get('customer_id');
+                                        return $data;
+                                    });
+                            }),
 
                         Forms\Components\Select::make('surgeon_id')
                             ->relationship('surgeon', 'name')

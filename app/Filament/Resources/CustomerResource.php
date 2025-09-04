@@ -17,7 +17,7 @@ class CustomerResource extends Resource
 {
     protected static ?string $model = Customer::class;
 
-    protected static ?string $navigationIcon = 'phosphor-identification-badge';
+    protected static ?string $navigationGroup = 'Actores';
 
     public static function form(Form $form): Form
     {

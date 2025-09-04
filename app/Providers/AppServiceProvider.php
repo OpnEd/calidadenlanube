@@ -22,6 +22,8 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Notifications\DatabaseNotification;
 use App\Models\TeamNotification;
 use App\Observers\AnesthesiaSheetObserver;
+use App\Repositories\CourseRepository;
+use App\Repositories\Interfaces\CourseInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -54,6 +56,9 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(DatabaseNotification::class, TeamNotification::class);
+
+        $this->app->bind(CourseInterface::class, CourseRepository::class);
+
 
     }
 

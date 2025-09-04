@@ -18,7 +18,7 @@ class UserResource extends Resource
 {
     protected static ?string $model = User::class;
     protected static ?string $tenantOwnershipRelationshipName = 'teams';
-    protected static ?string $navigationIcon = 'phosphor-user';
+    protected static ?string $navigationGroup = 'Actores';
 
     public static function form(Form $form): Form
     {

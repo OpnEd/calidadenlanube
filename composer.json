@@ -11,6 +11,7 @@
         "blade-ui-kit/blade-icons": "^1.8",
         "codeat3/blade-phosphor-icons": "^2.0",
         "doctrine/dbal": "^4.2",
+        "endroid/qr-code": "^6.0",
         "filament/filament": "^3.3",
         "flowframe/laravel-trend": "^0.4.0",
         "guzzlehttp/guzzle": "^7.9",

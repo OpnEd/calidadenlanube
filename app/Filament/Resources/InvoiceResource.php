@@ -18,7 +18,7 @@ class InvoiceResource extends Resource
 {
     protected static ?string $model = Invoice::class;
 
-    protected static ?string $navigationIcon = 'phosphor-invoice';
+    protected static ?string $navigationGroup = 'Transacciones';
 
     public static function form(Form $form): Form
     {

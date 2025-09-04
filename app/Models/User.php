@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\RoleType;
+use App\Models\Quality\Training\Enrollment;
 use App\Traits\MultiTenantHasRoles;
 use Filament\Facades\Filament;
 use Filament\Models\Contracts\FilamentUser;
@@ -91,7 +92,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants, HasAvata
         } */
 
         if ($panel->getId() === 'tenantManager') {
-            return str_ends_with($this->email, '@drogueriadigital.net.co');
+            return str_ends_with($this->email, '@calidadenlanube.net.co');
         }
 
         if ($panel->getId() === 'admin') {
@@ -124,6 +125,11 @@ class User extends Authenticatable implements FilamentUser, HasTenants, HasAvata
     public function dispatches(): HasMany
     {
         return $this->hasMany(Dispatch::class);
+    }
+
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(Enrollment::class);
     }
 
     public function getFilamentAvatarUrl(): ?string

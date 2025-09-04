@@ -7,6 +7,14 @@ use Filament\Support\Contracts\HasLabel;
 enum PermissionType: string implements HasLabel
 {
     // Batch
+    case VIEW_ANESTHESIA_SHEET         = 'view-anesthesia-sheet';
+    case CREATE_ANESTHESIA_SHEET       = 'create-anesthesia-sheet';
+    case EDIT_ANESTHESIA_SHEET         = 'edit-anesthesia-sheet';
+    case DELETE_ANESTHESIA_SHEET       = 'delete-anesthesia-sheet';
+    case RESTORE_ANESTHESIA_SHEET      = 'restore-anesthesia-sheet';
+    case FORCE_DELETE_ANESTHESIA_SHEET = 'force-delete-anesthesia-sheet';
+
+    // Batch
     case VIEW_BATCH         = 'view-batch';
     case CREATE_BATCH       = 'create-batch';
     case EDIT_BATCH         = 'edit-batch';
@@ -29,6 +37,14 @@ enum PermissionType: string implements HasLabel
     case DELETE_CHECKLIST_ITEM       = 'delete-checklist-item';
     case RESTORE_CHECKLIST_ITEM      = 'restore-checklist-item';
     case FORCE_DELETE_CHECKLIST_ITEM = 'force-delete-checklist-item';
+
+    // Batch
+    case VIEW_CUSTOMER         = 'view-customer';
+    case CREATE_CUSTOMER       = 'create-customer';
+    case EDIT_CUSTOMER         = 'edit-customer';
+    case DELETE_CUSTOMER       = 'delete-customer';
+    case RESTORE_CUSTOMER      = 'restore-customer';
+    case FORCE_DELETE_CUSTOMER = 'force-delete-customer';
 
         // Dispatch
     case VIEW_DISPATCH         = 'view-dispatch';
@@ -316,6 +332,14 @@ enum PermissionType: string implements HasLabel
     public function getLabel(): ?string
     {
         return match ($this) {
+            
+            self::VIEW_ANESTHESIA_SHEET         => 'Ver Hojas de Anestesia',
+            self::CREATE_ANESTHESIA_SHEET       => 'Crear Hojas de Anestesia',
+            self::EDIT_ANESTHESIA_SHEET         => 'Editar Hojas de Anestesia',
+            self::DELETE_ANESTHESIA_SHEET       => 'Eliminar Hojas de Anestesia',
+            self::RESTORE_ANESTHESIA_SHEET      => 'Restarurar Hojas de Anestesia',
+            self::FORCE_DELETE_ANESTHESIA_SHEET => 'Forzar la eliminación de Hojas de Anestesia',
+
             self::VIEW_BATCH         => 'Ver Batches',
             self::CREATE_BATCH       => 'Crear Batches',
             self::EDIT_BATCH         => 'Editar Batches',
@@ -337,6 +361,14 @@ enum PermissionType: string implements HasLabel
             self::DELETE_CHECKLIST_ITEM       => 'Eliminar Checklist Items',
             self::RESTORE_CHECKLIST_ITEM      => 'Restaurar Checklist Items',
             self::FORCE_DELETE_CHECKLIST_ITEM => 'Forzar la eliminación de Checklist Items',
+
+            
+            self::VIEW_CUSTOMER         => 'Ver Clientes',
+            self::CREATE_CUSTOMER       => 'Crear Clientes',
+            self::EDIT_CUSTOMER         => 'Editar Clientes',
+            self::DELETE_CUSTOMER       => 'Eliminar Clientes',
+            self::RESTORE_CUSTOMER      => 'Restarurar Clientes',
+            self::FORCE_DELETE_CUSTOMER => 'Forzar la eliminación de Clientes',
 
             // Dispatch
             self::VIEW_DISPATCH         => 'Ver Despachos',

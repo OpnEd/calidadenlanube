@@ -19,8 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class PermissionResource extends Resource
 {
     protected static ?string $model = Permission::class;
-
-    protected static ?string $navigationIcon = 'phosphor-lock-open';
+    
     protected static ?string $navigationGroup = 'Roles y Permisos';
 
     public static function form(Form $form): Form

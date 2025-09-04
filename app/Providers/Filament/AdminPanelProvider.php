@@ -100,6 +100,21 @@ class AdminPanelProvider extends PanelProvider
             ->tenantRegistration(RegisterTeam::class)
             ->navigationGroups([
                 NavigationGroup::make()
+                    ->label('Registros Ambientales')
+                    ->icon('phosphor-thermometer-hot'),
+                NavigationGroup::make()
+                    ->label('Actores')
+                    ->icon('phosphor-users-three'),
+                NavigationGroup::make()
+                    ->label('Clínica')
+                    ->icon('phosphor-syringe'),
+                NavigationGroup::make()
+                    ->label('Universidad')
+                    ->icon('phosphor-student'),
+                NavigationGroup::make()
+                    ->label('Transacciones')
+                    ->icon('phosphor-barcode'),
+                NavigationGroup::make()
                     ->label('Roles y Permisos')
                     ->icon('phosphor-fingerprint'),
             ])

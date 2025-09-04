@@ -1,7 +1,10 @@
 <?php
 
+
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ManufacturerController;
+use App\Http\Controllers\QrCodeController;
+use App\Livewire\CustomerAutoRegister;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
@@ -16,7 +19,7 @@ use Illuminate\Support\Facades\Route;
         Route::post('/invoice/{id}/email', [InvoiceController::class, 'sendByEmail'])->name('invoice.email');
 /*     }); */
 
-Route::get('/', [ManufacturerController::class, 'show'])->name('home');
+Route::redirect('/', '/admin/login');
 
 Route::get('/debug-session', function () {
     echo '<pre>';
@@ -37,3 +40,8 @@ Route::get('/clear-artisan', function () {
     Artisan::call('route:clear');
     return 'Comandos Artisan ejecutados: optimize:clear, config:clear, cache:clear';
 });
+
+// Rutas para registro de nuevos clientes en la clínica
+Route::get('/customer/barcode', [QrCodeController::class, 'showBarcode'])->name('customer.barcode');
+//Route::get('/customer-auto-register', CustomerAutoRegister::class)
+    //->name('customer.auto-register');

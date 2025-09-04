@@ -17,7 +17,7 @@ class BatchResource extends Resource
 {
     protected static ?string $model = Batch::class;
 
-    protected static ?string $navigationIcon = 'phosphor-barcode';
+    protected static ?string $navigationGroup = 'Transacciones';
 
     public static function form(Form $form): Form
     {
