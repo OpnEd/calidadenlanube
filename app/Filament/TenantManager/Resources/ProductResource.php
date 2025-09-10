@@ -51,7 +51,7 @@ class ProductResource extends Resource
                             ->maxLength(255),
                     ])
                     ->default(null),
-                Forms\Components\TextInput::make('code')
+                Forms\Components\TextInput::make('bar_code')
                     ->placeholder('Código de barras')
                     ->unique(ignoreRecord: true)
                     ->required()
@@ -62,6 +62,15 @@ class ProductResource extends Resource
                     ->maxLength(255),
                 Forms\Components\TextInput::make('drug')
                     ->placeholder('Principio activo')
+                    ->maxLength(255)
+                    ->default(null),
+                Forms\Components\TextInput::make('drug_concentration')
+                    ->helperText('Cantidad de principio activo por unidad de medida (mg/ml, mg/tab, etc.)')
+                    ->maxLength(255)
+                    ->default(null),
+                Forms\Components\TextInput::make('recommended_dose')
+                    ->placeholder('Dosis recomendada (por kg de peso)')
+                    ->helperText('Dosis recomendada por kg de peso del paciente, medida en mg de principio activo (mg/kg/hr)')
                     ->maxLength(255)
                     ->default(null),
                 Forms\Components\TextInput::make('description')

@@ -108,20 +108,28 @@ class AnesthesiaSheetResource extends Resource
                     ]),
 
                 Section::make('Anamnesis')
-                    ->description('Asegúrate de registrar como mínimo horas de ayuno:, dieta reciente:, tratamientos y medicación actual:, enfermedades actuales:, concurrentes: y anteriores:, otras cirugías o anestesias. Ejemplo: [Key = "Horas de ayuno" : Value = "8"]')
+                    ->description('Asegúrate de registrar como mínimo horas de ayuno:, dieta reciente:, tratamientos y medicación actual:, enfermedades actuales:, concurrentes: y anteriores:, otras cirugías o anestesias.')
                     ->schema([
                         Forms\Components\KeyValue::make('anamnesis')
-                            ->label('')
-                            ->keyPlaceholder('Horas de ayuno'),
+                            ->keyLabel('Ítem')
+                            ->valueLabel('Descripción')
+                            ->keyPlaceholder('ej.: Horas de ayuno:')
+                            ->valuePlaceholder('ej.: 5 horas')
+                            ->addActionLabel('Agregar ítem')
+                            ->columnSpanFull(),
                     ])
                     ->collapsed(),
 
                 Section::make('Anesthesia Notes')
-                    ->description('Asegúrate de registrar información relativa a distintos insumos empleados como tubos endotraqueales, oxígeno y otros. No olvides el registro ASA(I, II, III, IV, V, E). Ejemplo: [Key = "tubo endotraqueal" : Value = "calibre 8"]')
+                    ->description('Asegúrate de registrar información relativa a distintos insumos empleados como tubos endotraqueales, oxígeno y otros. No olvides el registro ASA(I, II, III, IV, V, E). ')
                     ->schema([
                         Forms\Components\KeyValue::make('anesthesia_notes')
-                            ->label('')
-                            ->keyPlaceholder('Tubo endotraqueal No.:'),
+                            ->keyLabel('Ítem')
+                            ->valueLabel('Descripción')
+                            ->keyPlaceholder('ej.: Calibre tubo endotraqueal:')
+                            ->valuePlaceholder('ej.: 5 mm')
+                            ->addActionLabel('Agregar ítem')
+                            ->columnSpanFull(),
                     ])
                     ->collapsed(),
                 Forms\Components\DateTimePicker::make('anesthesia_end_time')
@@ -133,12 +141,14 @@ class AnesthesiaSheetResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('team.name')
+                Tables\Columns\TextColumn::make('pet.name')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('user.name')
+                    ->label(__('Created by'))
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('customer.name')
                     ->numeric()
                     ->sortable(),
@@ -147,10 +157,12 @@ class AnesthesiaSheetResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('anesthesia_start_time')
                     ->dateTime()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('anesthesia_end_time')
                     ->dateTime()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -163,9 +175,6 @@ class AnesthesiaSheetResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('pet.name')
-                    ->numeric()
-                    ->sortable(),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),

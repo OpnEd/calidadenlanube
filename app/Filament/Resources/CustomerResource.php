@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Forms\Components\Fieldset;
 
 class CustomerResource extends Resource
 {
@@ -23,25 +24,37 @@ class CustomerResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('identification')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('address')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('email')
-                    ->email()
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('phonenumber')
-                    ->tel()
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\Textarea::make('data')
-                    ->columnSpanFull(),
+                Fieldset::make('Datos básicos')
+                    ->schema([
+                        Forms\Components\TextInput::make('name')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('identification')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('address')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('email')
+                            ->email()
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('phonenumber')
+                            ->tel()
+                            ->required()
+                            ->maxLength(255),
+                    ]),
+                Fieldset::make('Datos adicionales')
+                    ->schema([
+                        Forms\Components\KeyValue::make('data')
+                            ->label(false)
+                            ->keyLabel('Condición')
+                            ->valueLabel('Detalles')
+                            ->keyPlaceholder('ej.: Deja alimentación')
+                            ->valuePlaceholder('ej.: Sí')
+                            ->addActionLabel('Agregar condición')
+                            ->columnSpanFull(),
+                    ]),
             ]);
     }
 
@@ -90,7 +103,7 @@ class CustomerResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\PetsRelationManager::class,
         ];
     }
 

@@ -14,7 +14,7 @@ class CreateUser extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $data['team_id'] = Filament::getTenant()->id();
+        $data['team_id'] = Filament::getTenant()->id;
         return $data;
     }
 

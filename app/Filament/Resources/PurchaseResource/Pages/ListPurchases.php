@@ -56,9 +56,10 @@ class ListPurchases extends ListRecords
                 ->modalHeading(__('New Purchase'))
                 ->form([
                     Forms\Components\Select::make('product_id')
-                        ->options(Product::query()
-                            ->inStock()
-                            ->pluck('name', 'id')
+                        ->options(
+                            Product::query()->inStock()->get()->mapWithKeys(function ($product) {
+                                return [$product->id => "{$product->name} ({$product->description})"];
+                            })->toArray()
                         )
                         ->searchable()
                         ->afterStateUpdated(function (?string $state, Set $set, Get $get) {
@@ -139,7 +140,7 @@ class ListPurchases extends ListRecords
         ];
     }
 
-    public function getTabs(): array
+    /* public function getTabs(): array
     {
         return [
             'all' => Tab::make(),
@@ -156,5 +157,5 @@ class ListPurchases extends ListRecords
             'delivered' => Tab::make()
                 ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'delivered')),
         ];
-    }
+    } */
 }

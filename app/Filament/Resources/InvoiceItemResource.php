@@ -17,7 +17,10 @@ class InvoiceItemResource extends Resource
 {
     protected static ?string $model = InvoiceItem::class;
 
-    protected static ?string $navigationGroup = 'Transacciones';
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
 
     public static function form(Form $form): Form
     {

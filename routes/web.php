@@ -42,6 +42,6 @@ Route::get('/clear-artisan', function () {
 });
 
 // Rutas para registro de nuevos clientes en la clínica
-Route::get('/customer/barcode', [QrCodeController::class, 'showBarcode'])->name('customer.barcode');
+Route::get('/cliente/qr/autoregistro', [QrCodeController::class, 'showBarcode'])->name('customer.barcode');
 //Route::get('/customer-auto-register', CustomerAutoRegister::class)
     //->name('customer.auto-register');

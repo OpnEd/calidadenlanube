@@ -13,7 +13,7 @@ class BatchPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view-batch');
+        return \App\Helpers\CanViewAnyHelper::canViewAny($user, 'view-batch');
     }
 
     /**

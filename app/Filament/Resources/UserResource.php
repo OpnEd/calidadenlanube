@@ -42,8 +42,13 @@ class UserResource extends Resource
                     ->label('Is Surgeon')
                     ->default(false),
                 Forms\Components\KeyValue::make('data')
-                    ->label('Additional Data')
+                    ->label(__('Additional Data'))
+                    ->keyLabel('Ítem')
+                    ->valueLabel('Descripción')
                     ->keyPlaceholder('Address:')
+                    ->valuePlaceholder('ej.: Calle 123 #45-67')
+                    ->addActionLabel('Agregar ítem')
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -58,7 +63,8 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('email_verified_at')
                     ->dateTime()
                     ->sortable(),
-                Tables\Columns\IconColumn::make('is_surgeon'),
+                Tables\Columns\CheckboxColumn::make('is_surgeon')
+                    ->label(__('Is Surgeon')),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

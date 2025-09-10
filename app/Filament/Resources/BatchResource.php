@@ -49,11 +49,7 @@ class BatchResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('team_id')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('sanitary_registry_id')
-                    ->numeric()
+                Tables\Columns\TextColumn::make('sanitary_registry.code')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('code')
                     ->searchable(),

@@ -29,10 +29,68 @@ class ListSales extends ListRecords
                 ->modalHeading('Nueva Venta')
                 ->form([
                     Forms\Components\Select::make('inventory_id')
-                        ->label('Producto')
-                        ->options(function () {
-                            return \App\Models\Inventory::whereHas('product', fn($q) => $q->inInventory())
-                                ->pluck('bar_code', 'id');
+                        ->label('Inventario / Producto (Lote)')
+                        ->searchable()
+                        ->getSearchResultsUsing(function (string $search) {
+                            // Construimos una query base sobre Inventory
+                            $query = Inventory::query()->with(['batch', 'product']); // intentamos eager load de relaciones comunes
+
+                            // Añadimos condiciones de búsqueda en forma segura:
+                            $query->where(function ($q) use ($search) {
+                                // Si existe la relación batch->product, whereHas no fallará si la relación no existe,
+                                // pero no podemos llamar whereHas('batch.product') si batch->product no existe como método.
+                                // Por seguridad, chequeamos la existencia del método sobre una instancia.
+                                $inv = new Inventory();
+
+                                // 1) Si Inventory tiene relación product()
+                                if (method_exists($inv, 'product')) {
+                                    $q->whereHas('product', fn($q2) => $q2->where('name', 'like', "%{$search}%"));
+                                }
+
+                                // 2) Si Inventory tiene relación batch(), y Batch tiene relación product()
+                                if (method_exists($inv, 'batch')) {
+                                    $batch = new \App\Models\Batch();
+                                    if (method_exists($batch, 'product')) {
+                                        $q->orWhereHas('batch.product', fn($q3) => $q3->where('name', 'like', "%{$search}%"));
+                                    } else {
+                                        // si batch no tiene product, podemos buscar por batch.code (si existe)
+                                        $q->orWhereHas('batch', fn($q4) => $q4->where('code', 'like', "%{$search}%"));
+                                    }
+                                }
+
+                                // 3) Fallback: buscar por un campo en inventories (ej. product_name) si existe
+                                // Usamos Schema::hasColumn para evitar errores si la columna no existe
+                                if (\Illuminate\Support\Facades\Schema::hasColumn('inventories', 'product_name')) {
+                                    $q->orWhere('product_name', 'like', "%{$search}%");
+                                }
+
+                                // 4) Otra búsqueda por barcode u otro campo si existe
+                                if (\Illuminate\Support\Facades\Schema::hasColumn('inventories', 'bar_code')) {
+                                    $q->orWhere('bar_code', 'like', "%{$search}%");
+                                }
+                            });
+
+                            $rows = $query->limit(50)->get();
+
+                            return $rows->mapWithKeys(function ($inv) {
+                                // Construcción robusta de la etiqueta:
+                                $productName = null;
+                                if (isset($inv->batch) && method_exists($inv->batch, 'product') && $inv->batch->product) {
+                                    $productName = $inv->batch->product->name;
+                                } elseif (isset($inv->product) && $inv->product) {
+                                    $productName = $inv->product->name;
+                                } elseif (!empty($inv->product_name)) {
+                                    $productName = $inv->product_name;
+                                } else {
+                                    $productName = '—';
+                                }
+
+                                $batchCode = $inv->batch->code ?? ($inv->batch_id ?? null);
+
+                                $label = $productName . ($batchCode ? " • Lote: {$batchCode}" : '');
+
+                                return [$inv->id => $label];
+                            })->toArray();
                         })
                         ->searchable()
                         ->afterStateUpdated(function (?string $state, Set $set, Get $get) {

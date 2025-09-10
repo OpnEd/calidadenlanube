@@ -71,9 +71,9 @@ class Customer extends Model
         return $this->hasMany(Invoice::class);
     }
 
-    public function patients(): HasMany
+    public function pets(): HasMany
     {
-        return $this->hasMany(Patient::class);
+        return $this->hasMany(Pet::class);
     }
 
     // Relación uno a muchos con Venta

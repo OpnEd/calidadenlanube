@@ -11,7 +11,7 @@ class Stock extends Model
 
     protected $fillable = [
         'product_id',
-        'batch_id',
+        'central_batch_id',
         'quantity',
         'purchase_price',
     ];
@@ -31,8 +31,8 @@ class Stock extends Model
         return $this->belongsTo(Product::class);
     }
 
-    public function batch()
+    public function central_batch()
     {
-        return $this->belongsTo(Batch::class);
+        return $this->belongsTo(CentralBatch::class);
     }
 }

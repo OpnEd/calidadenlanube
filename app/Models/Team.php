@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -106,6 +107,21 @@ class Team extends Model
     {
         return $this->hasMany(Permission::class);
     }
+
+    public function pets(): HasManyThrough
+{
+    // hasManyThrough(FinalModel, ThroughModel, foreignKeyOnThrough, foreignKeyOnFinal, localKey, localKeyOnThrough)
+    // Team.id -> customers.team_id
+    // customers.id -> pets.customer_id
+    return $this->hasManyThrough(
+        Pet::class,
+        Customer::class,
+        'team_id',     // foreign key on customers table...
+        'customer_id', // foreign key on pets table...
+        'id',          // local key on teams table...
+        'id'           // local key on customers table...
+    );
+}
 
     public function processes(): HasMany
     {

@@ -21,7 +21,7 @@ class ViewPurchase extends ViewRecord
         return [
             Action::make('createDispatch')
                 ->label('Dispatch')
-                ->visible(fn (): bool => Gate::allows('create-dispatch', $this->ownerRecord))
+                ->visible(fn (): bool => Gate::allows('create-dispatch', $this->record))
                 ->action(function (Model $record, array $data): void {
                     // Verificar si todos los PurchaseItems están enlistados
                     $notEnlisted = $record->items()->where('enlisted', '!=', 1)->exists();
