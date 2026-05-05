@@ -24,6 +24,9 @@ class SaleResource extends Resource
     protected static ?string $model = Sale::class;
 
     protected static ?string $navigationGroup = 'Transacciones';
+    protected static ?string $navigationLabel = 'Historial de ventas';
+    protected static ?string $modelLabel = 'Venta';
+    protected static ?string $pluralModelLabel = 'Ventas';
 
     public static function form(Form $form): Form
     {
@@ -149,7 +152,6 @@ class SaleResource extends Resource
             'create' => Pages\CreateSale::route('/create'),
             'view' => Pages\ViewSale::route('/{record}'),
             'edit' => Pages\EditSale::route('/{record}/edit'),
-            'sales' => Pages\Sales::route('/ventas'),
             'invoice' => Pages\Invoice::route('/{record}/factura')
         ];
     }

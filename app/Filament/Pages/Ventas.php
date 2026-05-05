@@ -6,6 +6,7 @@ use Filament\Pages\Page;
 
 class Ventas extends Page
 {
+    protected static ?string $navigationLabel = 'Ventas (POS)';
     //protected static ?string $navigationIcon = 'phosphor-cash-register';
     protected static ?string $navigationGroup = 'Transacciones';
 

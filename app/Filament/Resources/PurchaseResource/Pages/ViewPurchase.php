@@ -14,7 +14,8 @@ class ViewPurchase extends ViewRecord
     {
         return [
             Actions\EditAction::make()
-                ->label('Add products'),
+                ->label('Editar')
+                ->visible(fn ($record) => in_array($record->status, ['pending', 'in progress', 'in_progress'])),
         ];
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\AppDocs;
+use App\Filament\Pages\Kardex;
 use App\Filament\Pages\Setting;
 use App\Filament\Pages\Tenancy\EditTeamProfile;
 use App\Filament\Pages\Tenancy\RegisterTeam;
@@ -51,11 +53,13 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Pages\Dashboard::class,
                 Setting::class,
+                //AppDocs::class,
+                // ...
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                // Widgets\AccountWidget::class,
+                // Widgets\FilamentInfoWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -74,7 +78,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->sidebarCollapsibleOnDesktop()
             ->plugins([
-                FilamentApexChartsPlugin::make()])
+                FilamentApexChartsPlugin::make()
+            ])
             ->login()
             ->registration()
             ->passwordReset()
@@ -111,6 +116,9 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make()
                     ->label('Universidad')
                     ->icon('phosphor-student'),
+                NavigationGroup::make()
+                    ->label('Mejoramiento Continuo')
+                    ->icon('phosphor-seal-check'),
                 NavigationGroup::make()
                     ->label('Transacciones')
                     ->icon('phosphor-barcode'),

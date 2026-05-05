@@ -6,7 +6,6 @@ use App\Models\DocumentCategory;
 use App\Models\ProductCategory;
 use App\Models\Role;
 use App\Models\SanitaryRegistry;
-use App\Models\Stock;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -35,6 +34,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             PurchaseSeeder::class,
             PurchaseItemSeeder::class,
+            CentralBatchSeeder::class,
             StockSeeder::class,
             CentralProductPriceSeeder::class,
             InventorySeeder::class,
@@ -42,8 +42,6 @@ class DatabaseSeeder extends Seeder
             EnvironmentalRecordSeeder::class,
             PetSeeder::class,
         ]);
-
-        Stock::factory(30)->create();
 
         /* $user = User::factory()->create([
             'name' => 'Test User',

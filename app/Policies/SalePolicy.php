@@ -13,6 +13,7 @@ use App\Helpers\CanViewAnyHelper;
 use App\Helpers\CanViewHelper;
 use App\Models\Sale;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Auth\Access\Response;
 
 class SalePolicy
@@ -81,12 +82,60 @@ class SalePolicy
     
     public function confirm(User $user, Sale $model): bool
     {
-        return CanConfirmHelper::canConfirm($user, $model, 'confirm-sale')
-            && $model->status === 'in-progress';
+        $team = Filament::getTenant();
+
+        if (!$team) {
+            return false;
+        }
+        
+        $teamId = $team->id;
+
+        // Obtiene el primer rol del equipo actual (usando team_id explícito)
+        $role = $user->roles()
+            ->where('model_has_roles.team_id', $teamId)
+            ->where(function ($query) use ($teamId) {
+                $query->whereNull('roles.team_id')
+                    ->orWhere('roles.team_id', $teamId);
+            })
+            ->first();
+
+        if (!$role) {
+            return false; // Usuario no tiene roles en este equipo
+        }
+
+        return $role->permissions->contains('name', 'confirm-purchase')
+            && $model->team_id === $teamId
+            && $model->status === 'in-progress'
+            && $user->teams()->where('teams.id', $teamId)->exists();
     }
     
     public function cancel(User $user, Sale $model): bool
-    {
-        return CanCancelHelper::canCancel($user, $model, 'cancel-sale');
+    {        
+        $team = Filament::getTenant();
+
+        if (!$team) {
+            return false;
+        }
+        
+        $teamId = $team->id;
+
+        // Obtiene el primer rol del equipo actual (usando team_id explícito)
+        $role = $user->roles()
+            ->where('model_has_roles.team_id', $teamId)
+            ->where(function ($query) use ($teamId) {
+                $query->whereNull('roles.team_id')
+                    ->orWhere('roles.team_id', $teamId);
+            })
+            ->first();
+
+        if (!$role) {
+            return false; // Usuario no tiene roles en este equipo
+        }
+
+        return $role->permissions->contains('name', 'cancel-sale')
+            && $model->team_id === $teamId
+            && $user->teams()->where('teams.id', $teamId)->exists()
+            && $model->status === 'confirmed'
+            && $model->updated_at->diffInHours(now()) <= 2;
     }
 }

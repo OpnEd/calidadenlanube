@@ -18,6 +18,8 @@ class ProductFactory extends Factory
      */
     public function definition(): array
     {
+        $fractionable = $this->faker->boolean(30);
+
         return [
             //'product_category_id' => \App\Models\ProductCategory::factory(),
             'product_category_id' => random_int(1, 17),
@@ -36,8 +38,9 @@ class ProductFactory extends Factory
                 'Frasco de 120ml',
                 'Blíster con 10 cápsulas'
             ]),
-            'fractionable' => $this->faker->boolean(30),
-            'conversion_factor' => $this->faker->optional(0.4)->randomFloat(2, 1, 1000),
+            'fractionable' => $fractionable,
+            'conversion_factor' => $fractionable ? $this->faker->numberBetween(2, 1000) : null,
+            'min_fraction' => $fractionable ? $this->faker->randomFloat(4, 0.0001, 1) : null,
             'image' => 'products/default.jpg',
             'tax' => $this->faker->randomFloat(2, 0, 21),
             'status' => $this->faker->boolean(85),

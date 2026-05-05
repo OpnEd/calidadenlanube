@@ -43,6 +43,18 @@ class Lesson extends Model
     {
         return $this->hasOne(Assessment::class);
     }
+
+    public function enrollments()
+    {
+        // pivot enrollment_lesson
+        return $this->belongsToMany(Enrollment::class, 'enrollment_lesson')
+            ->withPivot([
+                'started_at',
+                'completed_at',
+                'last_accessed_at',
+            ])
+            ->withTimestamps();
+    }
     public function getIsActiveAttribute()
     {
         return $this->active;

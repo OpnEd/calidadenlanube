@@ -21,8 +21,8 @@ class PurchasePolicy
      */
     public function viewAny(User $user): bool
     {
-        return true;
-        //return CanViewAnyHelper::canViewAny($user, 'view-purchase');
+        //return true;
+        return CanViewAnyHelper::canViewAny($user, 'view-purchase');
     }
 
     /**
@@ -30,8 +30,8 @@ class PurchasePolicy
      */
     public function view(User $user, Purchase $model): bool
     {
-        return true;
-        //return CanViewHelper::canView($user, $model, 'view-purchase');
+        //return true;
+        return CanViewHelper::canView($user, $model, 'view-purchase');
     }
 
     /**
@@ -39,8 +39,8 @@ class PurchasePolicy
      */
     public function create(User $user): bool
     {
-        return true;
-        //return CanCreateHelper::canCreate($user, 'create-purchase');
+        //return true;
+        return CanCreateHelper::canCreate($user, 'create-purchase');
     }
 
     /**
@@ -48,9 +48,9 @@ class PurchasePolicy
      */
     public function update(User $user, Purchase $model): bool
     {
-        return true;
-        //return CanUpdateHelper::canUpdate($user, $model, 'edit-purchase')
-        //    && $model->status === 'pending';
+        //return true;
+        return CanUpdateHelper::canUpdate($user, $model, 'edit-purchase')
+        && $model->status === 'pending';
     }
 
     /**
@@ -58,8 +58,8 @@ class PurchasePolicy
      */
     public function delete(User $user, Purchase $model): bool
     {
-        return true;
-        //return CanDeleteHelper::canDelete($user, $model, 'delete-purchase');
+        //return true;
+        return CanDeleteHelper::canDelete($user, $model, 'delete-purchase');
     }
 
     /**
@@ -80,8 +80,8 @@ class PurchasePolicy
 
     public function confirm(User $user, Purchase $model): bool
     {
-        return true;
-        /* $team = Filament::getTenant();
+        //return true;
+        $team = Filament::getTenant();
 
         if (!$team) {
             return false;
@@ -105,6 +105,34 @@ class PurchasePolicy
         return $role->permissions->contains('name', 'confirm-purchase')
             && $model->status === 'pending'
             && $model->team_id === $teamId
-            && $user->teams()->where('teams.id', $teamId)->exists(); */
+            && $user->teams()->where('teams.id', $teamId)->exists();
+    }
+
+    public function receive(User $user, Purchase $model): bool
+    {
+        $team = Filament::getTenant();
+
+        if (! $team) {
+            return false;
+        }
+
+        $teamId = $team->id;
+
+        $role = $user->roles()
+            ->where('model_has_roles.team_id', $teamId)
+            ->where(function ($query) use ($teamId) {
+                $query->whereNull('roles.team_id')
+                    ->orWhere('roles.team_id', $teamId);
+            })
+            ->first();
+
+        if (! $role) {
+            return false;
+        }
+
+        return $role->permissions->contains('name', 'receive-purchase')
+            && $model->status === 'confirmed'
+            && $model->team_id === $teamId
+            && $user->teams()->where('teams.id', $teamId)->exists();
     }
 }

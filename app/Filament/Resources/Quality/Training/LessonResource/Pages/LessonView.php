@@ -44,7 +44,7 @@ class LessonView extends ViewRecord
 
             if ($assessment) {
                 $actions[] = Action::make('realizar-assessment')
-                    ->label('Realizar Assessment')
+                    ->label('Realizar Evaluación')
                     ->form(function () use ($assessment) {
                         $formSchema = [];
                         $questions = $assessment->questions()->with('question_options')->get();

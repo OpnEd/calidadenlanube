@@ -93,9 +93,12 @@ class ItemsRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
-                    ->label('Add product')
+                    ->label('Adicionar producto')
                     ->icon('phosphor-plus')
-                    ->visible(fn(): bool => Gate::allows('confirm', $this->ownerRecord))
+                    ->visible(fn(): bool => 
+                        Gate::allows('confirm', $this->ownerRecord)
+                        && in_array($this->ownerRecord->status, ['pending', 'in progress', 'in_progress'])
+                    )
                     ->before(function (array $data, $action) {
                         $purchase = $this->ownerRecord;
                         $exists = $purchase->items()->where('product_id', $data['product_id'])->exists();
@@ -117,14 +120,15 @@ class ItemsRelationManager extends RelationManager
                         });
                     }),
                 Tables\Actions\Action::make('confirmPurchase')
-                    ->label('Confirm Purchase')
+                    ->label('Convertir a Pedido')
                     ->color('success')
                     ->icon('heroicon-o-check')
+                    ->tooltip('Confirma esta cotización para convertirla en un pedido.')
                     ->visible(
                         fn(): bool =>
                         Gate::allows('confirm', $this->ownerRecord)
-                            &&
-                            $this->ownerRecord->items()->count() > 0
+                            && $this->ownerRecord->items()->count() > 0
+                            && in_array($this->ownerRecord->status, ['pending', 'in progress', 'in_progress'])
                     )
                     ->requiresConfirmation()
                     ->action(function () {

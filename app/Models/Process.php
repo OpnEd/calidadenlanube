@@ -30,6 +30,11 @@ class Process extends Model
 
     protected $casts = [
         'records' => 'array',
+        'suppliers' => 'array',
+        'inputs' => 'array',
+        'procedures' => 'array',
+        'outputs' => 'array',
+        'clients' => 'array',
     ];
 
     public function checklists(): HasMany

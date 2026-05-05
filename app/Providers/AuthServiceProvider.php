@@ -2,7 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Document;
+use App\Models\ProductReception;
 use App\Models\Purchase;
+use App\Policies\DocumentPolicy;
+use App\Policies\ProductReceptionPolicy;
 use App\Policies\PurchasePolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
@@ -21,6 +25,8 @@ class AuthServiceProvider extends ServiceProvider
      */
     protected $policies = [
         // ← Aquí añades esta línea:
+        Document::class => DocumentPolicy::class,
+        ProductReception::class => ProductReceptionPolicy::class,
         Purchase::class => PurchasePolicy::class,
     ];
 

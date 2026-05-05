@@ -27,7 +27,8 @@ class Team extends Model
         'address',
         'email',
         'phonenumber',
-        'data'
+        'data',
+        'slug'
     ];
 
     protected $casts = [
@@ -98,6 +99,11 @@ class Team extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    public function kardexEntries(): HasMany
+    {
+        return $this->hasMany(KardexEntry::class);
+    }
+
     public function patients(): BelongsToMany
     {
         return $this->belongsToMany(Patient::class);
@@ -133,7 +139,7 @@ class Team extends Model
         return $this->hasMany(TeamProductPrice::class);
     }
 
-    public function product_receptions(): HasMany
+    public function productReceptions(): HasMany
     {
         return $this->hasMany(ProductReception::class);
     }

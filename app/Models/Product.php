@@ -24,12 +24,15 @@ class Product extends Model
         'bar_code', //código
         'name', //nombre comercial
         'drug', //principio activo
+        'unit_measurement', //unidad de medida del producto
         'drug_concentration', //concentración del principio activo por unidad de medida del producto
+        'recomended_dose', //dosis recomendada
         'description', //presentación comercial
         'is_high_risk', //indica si es de alto riesgo
         'is_mce', //indica si es un medicamento de control especial
         'fractionable', //fraccionable
         'conversion_factor', //factor de conversión
+        'min_fraction', //tamaño minimo de fraccion consumible
         'image', // imagen
         'tax', //impuesto
         'status' //estado:activo o inactivo
@@ -46,6 +49,7 @@ class Product extends Model
             'is_mce' => 'boolean',
             'fractionable' => 'boolean',
             'conversion_factor' => 'decimal:2',
+            'min_fraction' => 'decimal:4',
             'tax' => 'decimal:2',
             'image' => 'string',
             'status' => 'boolean'

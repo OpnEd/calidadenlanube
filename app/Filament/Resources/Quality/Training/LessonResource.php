@@ -24,6 +24,13 @@ class LessonResource extends Resource
 
     protected static ?string $navigationGroup = 'Universidad';
     protected static ?string $navigationLabel = 'Lecciones';
+    protected static ?string $modelLabel = 'Lección';
+    protected static ?string $pluralModelLabel = 'Lecciones';
+    
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
 
     public static function form(Form $form): Form
     {

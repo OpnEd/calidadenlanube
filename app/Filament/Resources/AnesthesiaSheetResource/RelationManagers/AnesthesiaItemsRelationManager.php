@@ -17,12 +17,14 @@ use Filament\Forms\Set;
 class AnesthesiaItemsRelationManager extends RelationManager
 {
     protected static string $relationship = 'anesthesiaItems';
+    protected static ?string $title = 'Ítems de Anestesia';
 
     public function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\Select::make('phase')
+                    ->label(__('clinic.phase'))
                     ->options([
                         'pre_anesthesia' => 'Pre Anesthesia',
                         'intraoperative' => 'Intraoperative',
@@ -31,6 +33,7 @@ class AnesthesiaItemsRelationManager extends RelationManager
                     ->default('pre_anesthesia')
                     ->required(),
                 Forms\Components\Select::make('inventory_id')
+                    ->label(__('clinic.product_name'))
                     ->required()
                     ->searchable()
                     ->preload()
@@ -62,13 +65,16 @@ class AnesthesiaItemsRelationManager extends RelationManager
                     })
                     ->live(),
                 Forms\Components\TextInput::make('dose_per_kg')
+                    ->label(__('clinic.dose'))
                     ->default(0)
                     ->required()
                     ->readonly(),
                 Forms\Components\TextInput::make('dose_measure')
+                    ->label(__('clinic.dose_measure'))
                     ->default(0)
                     ->required(),
                 Forms\Components\TextInput::make('dose_measure_unit')
+                    ->label(__('clinic.dose_measure_unit'))
                     ->placeholder('***')
                     ->readOnly()
                     ->required()
@@ -83,21 +89,21 @@ class AnesthesiaItemsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('id')
                     ->label('ID'),
                 Tables\Columns\TextColumn::make('phase')
-                    ->label(__('Phase')),
+                    ->label(__('clinic.phase')),
                 Tables\Columns\TextColumn::make('inventory.product_name')
-                    ->label(__('Drug'))
+                    ->label(__('clinic.product_name'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('dose_per_kg')
-                    ->label(__('Dose (mg/kg)'))
+                    ->label(__('clinic.dose'))
                     ->sortable()
                     ->numeric(),
                 Tables\Columns\TextInputColumn::make('dose_measure')
-                    ->label(__('Measurement')),
+                    ->label(__('clinic.dose_measure')),
                 Tables\Columns\TextColumn::make('dose_measure_unit')
-                    ->label(__('Measurement Units')),
+                    ->label(__('clinic.dose_measure_unit')),
                 Tables\Columns\TextColumn::make('total_dose_mg')
-                    ->label('Total Dose (mg)')
+                    ->label(__('clinic.total_dose_mg'))
                     ->getStateUsing(function ($record) {
                         $concentration = optional(optional($record->inventory)->product)->drug_concentration ?? 0;
                         $doseMeasure = $record->dose_measure ?? 0;
@@ -105,13 +111,16 @@ class AnesthesiaItemsRelationManager extends RelationManager
                     })
                     ->formatStateUsing(fn($state) => number_format($state, 2)),
                 Tables\Columns\TextColumn::make('administration_route')
-                    ->label(__('Administration Route')),
+                    ->label(__('clinic.administration_route')),
             ])
             ->filters([
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                Tables\Actions\CreateAction::make()
+                    ->label(__('clinic.attach_anestesia_sheet_item'))
+                    ->modalHeading(__('clinic.attach_anestesia_sheet_item'))
+                    ->icon('heroicon-o-plus'),
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([

@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Quality\Training;
 
 use App\Filament\Resources\Quality\Training\EnrollmentResource\Pages;
-use App\Filament\Resources\Quality\Training\EnrollmentResource\RelationManagers;
 use App\Models\Quality\Training\Enrollment;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -11,8 +10,6 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
 
 class EnrollmentResource extends Resource
@@ -21,6 +18,13 @@ class EnrollmentResource extends Resource
 
     protected static ?string $navigationGroup = 'Universidad';
     protected static ?string $navigationLabel = 'Matrículas';
+    protected static ?string $modelLabel = 'Matrícula';
+    protected static ?string $pluralModelLabel = 'Matrículas';
+    
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
 
     public static function getNavigationBadge(): ?string
     {

@@ -21,6 +21,7 @@ use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 
 class ListPurchases extends ListRecords
 {
@@ -33,7 +34,7 @@ class ListPurchases extends ListRecords
                 ->label('Go shopping!')
                 ->icon('phosphor-shopping-bag')
                 ->action(function () {
-                    // 1️⃣ Crear el Purchase con valores por defecto
+                    // Crear el Purchase con valores por defecto
                     $purchase = Purchase::create([
                         'team_id'       => Filament::getTenant()->id,
                         'supplier_id'   => 1,
@@ -44,16 +45,16 @@ class ListPurchases extends ListRecords
                         // …otros campos por defecto…
                     ]);
 
-                    // 2️⃣ Redirigir al formulario de edición de este Purchase
+                    // Redirigir al formulario de edición de este Purchase
                     Redirect::to(
                         PurchaseResource::getUrl('edit', ['record' => $purchase->id])
                     );
                 })
                 ->color('primary'), */
             Action::make('quickPurchase')
-                ->label('Iniciar Pedido!')
+                ->label('Iniciar Cotización!')
                 ->icon('phosphor-shopping-bag')
-                ->modalHeading(__('New Purchase'))
+                ->modalHeading(__('Nueva Cotización'))
                 ->form([
                     Forms\Components\Select::make('product_id')
                         ->options(
@@ -64,9 +65,10 @@ class ListPurchases extends ListRecords
                         ->searchable()
                         ->afterStateUpdated(function (?string $state, Set $set, Get $get) {
                             // Calcular y persistir price y total aunque no haya inputs
-                            $price = CentralProductPrice::find($get('product_id'))?->price ?? 0;
+                            $price = CentralProductPrice::find($state)?->price ?? 0;
+                            $quantity = $get('quantity') ?? 1;
                             $set('price', $price);
-                            $set('total', $state * $price);
+                            $set('total', $quantity * $price);
                             
                         })
                         ->live()
@@ -94,6 +96,9 @@ class ListPurchases extends ListRecords
                         ->default(false),
                 ])
                 ->action(function (array $data, Action $action) {
+                    // DEBUG: Ver qué datos llegan del formulario
+                    Log::info('QuickPurchase iniciada', ['data' => $data]);
+
                     // Validar que exista el producto
                     if (empty($data['product_id'])) {
                         \Filament\Notifications\Notification::make()
@@ -103,13 +108,20 @@ class ListPurchases extends ListRecords
                         return;
                     }
 
+                    // MEJORA: Recalcular precio en backend por seguridad y consistencia
+                    // No confiamos ciegamente en $data['price'] o $data['total'] del frontend
+                    $backendPrice = CentralProductPrice::find($data['product_id'])?->price ?? 0;
+                    $backendTotal = $backendPrice * ($data['quantity'] ?? 1);
+
+                    Log::info('Precios calculados', ['price' => $backendPrice, 'total' => $backendTotal]);
+
                     // Crear la compra (Purchase) con los datos proporcionados
                     $purchase = Purchase::create([
                         'team_id'       => Filament::getTenant()->id,
                         'supplier_id'   => 1,
                         'code'          => (new Purchase())->generatePurchaseCode(),
-                        'status'        => 'in progress',
-                        'total'         => $data['total'] ?? 0,
+                        'status'        => 'pending',
+                        'total'         => $backendTotal,
                         'observations'  => null,
                         'data'          => [],
                     ]);
@@ -118,14 +130,14 @@ class ListPurchases extends ListRecords
                     $purchase->items()->create([
                         'product_id'     => $data['product_id'],
                         'quantity'       => $data['quantity'],
-                        'price'          => $data['price'],
-                        'total'          => $data['total'],
+                        'price'          => $backendPrice,
+                        'total'          => $backendTotal,
                         'enlisted'       => $data['enlisted'],
                     ]);
 
                     Notification::make()
-                        ->title('Pedido creado exitosamente')
-                        ->body('Puedes continuar editando el pedido para agregar más productos.')
+                        ->title('Cotización iniciada con éxito')
+                        ->body('Puedes continuar editando la cotización para agregar más productos.')
                         ->icon('phosphor-check')
                         ->success()
                         ->send();

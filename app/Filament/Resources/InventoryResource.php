@@ -5,25 +5,29 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\InventoryResource\Pages;
 use App\Filament\Resources\InventoryResource\RelationManagers;
 use App\Models\Inventory;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class InventoryResource extends Resource
 {
     protected static ?string $model = Inventory::class;
 
     protected static ?string $navigationGroup = 'Transacciones';
+    protected static ?string $navigationLabel = 'Inventario';
+    protected static ?string $modelLabel = 'Existencia';
+    protected static ?string $pluralModelLabel = 'Existencias';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\Select::make('product_id')
+                    ->label('Producto')
                     ->relationship('product', 'name')
                     ->searchable()
                     ->preload()
@@ -41,19 +45,30 @@ class InventoryResource extends Resource
                     }),
 
                 Forms\Components\TextInput::make('product_name')
+                    ->label('Nombre del producto')
                     ->required()
                     ->maxLength(255)
                     ->reactive(), // <- importante para que se actualice
 
                 Forms\Components\Select::make('batch_id')
-                    ->relationship('batch', 'id')
+                    ->label('Lote')
+                    ->relationship(
+                        'batch',
+                        'code',
+                        fn (Builder $query) => $query->where('team_id', Filament::getTenant()?->id)
+                    )
+                    ->searchable()
+                    ->preload()
                     ->required(),
 
                 Forms\Components\TextInput::make('quantity')
+                    ->label('Cantidad comercial')
+                    ->helperText('Para productos fraccionables se convierte automaticamente a unidades minimas en inventario.')
                     ->required()
                     ->numeric(),
 
                 Forms\Components\TextInput::make('purchase_price')
+                    ->label('Precio de compra')
                     ->required()
                     ->numeric(),
             ]);
@@ -64,33 +79,42 @@ class InventoryResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('product.name')
-                    ->numeric()
+                    ->label('Producto')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('batch.code')
-                    ->numeric()
+                    ->label('Lote')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('quantity')
+                    ->label('Cantidad')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('purchase_price')
+                    ->label('Precio de compra')
                     ->numeric()
+                    ->prefix('$')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Creado')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
+                    ->label('Actualizado')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('product_name')
+                    ->label('Nombre del producto')
                     ->searchable(),
             ])
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\EditAction::make()
+                        ->label('Editar'),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

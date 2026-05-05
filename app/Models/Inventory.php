@@ -26,7 +26,7 @@ class Inventory extends Model
         //'sale_price' => 'decimal:2',
     ];
     
-    public function anesthesiaItems(): HasMany
+    public function anesthesiaSheetItems(): HasMany
     {
         return $this->hasMany(AnesthesiaSheetItem::class);
     }

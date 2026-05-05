@@ -2,99 +2,85 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\Stock;
+use App\Models\CentralBatch;
 use App\Models\Product;
-use App\Models\Batch;
-use App\Models\SanitaryRegistry;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
+use App\Models\Stock;
+use Illuminate\Database\Seeder;
 
 class StockSeeder extends Seeder
 {
     public function run(): void
     {
-        // Crear 10 registros de SanitaryRegistry
-        $sanRegs = [];
-        for ($i = 1; $i <= 10; $i++) {
-            $sr = SanitaryRegistry::create([
-                'code' => Str::upper(Str::random(5)),
-                'cum'  => Str::uuid()->toString(),
-            ]);
-            $sanRegs[] = $sr->id;
+        if (Product::count() === 0) {
+            $this->command?->warn('No hay productos. Ejecutando ProductSeeder...');
+            $this->call(ProductSeeder::class);
         }
 
-        // Crear 20 Batches únicos
-        $batchIds = [];
-        foreach (range(1, 20) as $index) {
-            $batch = Batch::create([
-                'team_id'            => 1,
-                'sanitary_registry_id' => $sanRegs[array_rand($sanRegs)],
-                'manufacturer_id'    => 1,
-                'code'               => strtoupper(Str::random(6)),
-                'manufacturing_date' => now()->subDays(rand(1, 365)),
-                'expiration_date'    => now()->addDays(rand(30, 365)),
-                'data'               => null,
-            ]);
-            $batchIds[] = $batch->id;
-        }
-        // Obtener IDs de productos y lotes disponibles
-        $productIds = Product::pluck('id')->toArray();
-        $batchIds = Batch::pluck('id')->toArray();
-
-        // Inicializar seguimiento de lotes asignados por producto
-        $assignedBatches = [];
-        foreach ($productIds as $pid) {
-            $assignedBatches[$pid] = [];
+        if (CentralBatch::count() === 0) {
+            $this->command?->warn('No hay central batches. Ejecutando CentralBatchSeeder...');
+            $this->call(CentralBatchSeeder::class);
         }
 
-        // 1️⃣ Paso 1: Asegurar al menos 1 registro por producto
-        foreach ($productIds as $pid) {
-            $available = array_diff($batchIds, $assignedBatches[$pid]);
-            if (empty($available)) {
-                continue;
+        $productIds = Product::query()->pluck('id')->all();
+        $centralBatchIds = CentralBatch::query()->pluck('id')->all();
+
+        if (empty($productIds) || empty($centralBatchIds)) {
+            $this->command?->error('StockSeeder: faltan productos o central batches para sembrar stock.');
+
+            return;
+        }
+
+        foreach ($productIds as $productId) {
+            Stock::updateOrCreate(
+                [
+                    'product_id' => $productId,
+                    'central_batch_id' => $centralBatchIds[array_rand($centralBatchIds)],
+                ],
+                [
+                    'quantity' => random_int(5, 120),
+                    'purchase_price' => random_int(300, 25000) / 100,
+                ]
+            );
+        }
+
+        $targetRecords = max(120, count($productIds));
+        $currentCount = Stock::count();
+        $attempts = 0;
+        $maxAttempts = 2000;
+
+        while ($currentCount < $targetRecords && $attempts < $maxAttempts) {
+            $attempts++;
+
+            $productId = $productIds[array_rand($productIds)];
+            $centralBatchId = $centralBatchIds[array_rand($centralBatchIds)];
+
+            $stock = Stock::firstOrCreate(
+                [
+                    'product_id' => $productId,
+                    'central_batch_id' => $centralBatchId,
+                ],
+                [
+                    'quantity' => random_int(1, 90),
+                    'purchase_price' => random_int(200, 30000) / 100,
+                ]
+            );
+
+            if ($stock->wasRecentlyCreated) {
+                $currentCount++;
             }
-            $batchId = Arr::random($available);
-            $assignedBatches[$pid][] = $batchId;
-
-            Stock::create([
-                'product_id'    => $pid,
-                'batch_id'      => $batchId,
-                'quantity'      => rand(0, 20),
-                'purchase_price'=> rand(100, 10000) / 100,
-            ]);
         }
 
-        // 2️⃣ Paso 2: Crear registros adicionales hasta llegar a 30
-        $totalToCreate = 30 - count($productIds);
-        $created = 0;
+        Stock::query()
+            ->inRandomOrder()
+            ->limit(min(40, Stock::count()))
+            ->get()
+            ->each(function (Stock $stock): void {
+                $stock->update([
+                    'quantity' => max(0, (int) $stock->quantity + random_int(-3, 15)),
+                    'purchase_price' => max(0.01, (float) $stock->purchase_price + (random_int(-50, 120) / 100)),
+                ]);
+            });
 
-        while ($created < $totalToCreate) {
-            // Seleccionar producto con menos de 3 lotes asignados
-            $eligible = array_filter($assignedBatches, fn($batches) => count($batches) < 3);
-            if (empty($eligible)) {
-                break;
-            }
-            $pid = Arr::random(array_keys($eligible));
-
-            // Obtener lotes no asignados aún para ese producto
-            $available = array_diff($batchIds, $assignedBatches[$pid]);
-            if (empty($available)) {
-                // Si no hay lotes nuevos, salts
-                unset($eligible[$pid]);
-                continue;
-            }
-            $batchId = Arr::random($available);
-            $assignedBatches[$pid][] = $batchId;
-
-            Stock::create([
-                'product_id'    => $pid,
-                'batch_id'      => $batchId,
-                'quantity'      => rand(0, 20),
-                'purchase_price'=> rand(100, 10000) / 100,
-            ]);
-
-            $created++;
-        }
+        $this->command?->info('StockSeeder: stock sembrado usando product_id + central_batch_id.');
     }
 }

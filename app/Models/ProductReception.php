@@ -13,6 +13,9 @@ class ProductReception extends Model
     /** @use HasFactory<\Database\Factories\ProductReceptionFactory> */
     use HasFactory, SoftDeletes;
 
+    public const STATUS_IN_PROGRESS = 'in progress';
+    public const STATUS_DONE = 'done';
+
     protected $fillable = [
         'team_id',
         'user_id',
@@ -25,10 +28,15 @@ class ProductReception extends Model
     ];
 
     protected $casts = [
-        'status' => 'boolean',
+        'status' => 'string',
         'reception_date' => 'datetime',
         'data' => 'array',
     ];
+
+    public function isDone(): bool
+    {
+        return $this->status === self::STATUS_DONE;
+    }
 
     public function invoice(): BelongsTo
     {

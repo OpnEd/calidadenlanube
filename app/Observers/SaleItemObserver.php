@@ -21,7 +21,7 @@ class SaleItemObserver
         if ($inventory) {
             // Descontar la cantidad vendida
             $inventory->decrement('quantity', $saleItem->quantity);
-            Log::info(sprintf("Inventory ID %d decremented by %d", $inventory->id, $saleItem->quantity));
+            //Log::info(sprintf("Inventory ID %d decremented by %d", $inventory->id, $saleItem->quantity));
         }
     }
 
@@ -39,7 +39,7 @@ class SaleItemObserver
         if ($inventory) {
             // Reponer la cantidad eliminada
             $inventory->increment('quantity', $saleItem->quantity);
-            Log::info(sprintf("Inventory ID %d incremented by %d", $inventory->id, $saleItem->quantity));
+            //Log::info(sprintf("Inventory ID %d incremented by %d", $inventory->id, $saleItem->quantity));
         }
     }
 

@@ -53,7 +53,11 @@ class Enrollment extends Model
     {
         // pivot enrollment_lesson
         return $this->belongsToMany(Lesson::class, 'enrollment_lesson')
-            ->withPivot(['passed', 'passed_at'])
+            ->withPivot([
+                'started_at',
+                'completed_at',
+                'last_accessed_at',
+            ])
             ->withTimestamps();
     }
     /**

@@ -8,12 +8,16 @@ use App\Models\Role;
 use App\Models\Team;
 use App\Models\User;
 use Dom\Text;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Pages\Tenancy\RegisterTenant;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\PermissionRegistrar;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
+use Illuminate\Support\Str;
 
 class RegisterTeam extends RegisterTenant
 {
@@ -27,23 +31,84 @@ class RegisterTeam extends RegisterTenant
         return $form
             ->schema([
                 TextInput::make('name')
-                    ->label('Nombre de la compañía')
-                    ->required(),
+                    ->label('Nombre de la Droguería')
+                    ->required()
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Get $get, Set $set, ?string $state) {
+                        $base = Str::slug($state ?? '');
+                        $set('slug', $this->makeCompanySlugUnique($base, $get('identification'), $get('id')));
+                    }),
+
                 TextInput::make('identification')
                     ->label('NIT')
-                    ->required(),
+                    ->required()
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Get $get, Set $set, ?string $state) {
+                        $base = Str::slug($get('name') ?? '');
+                        $set('slug', $this->makeCompanySlugUnique($base, $state, $get('id')));
+                    }),
+
+                TextInput::make('slug')
+                    ->label('Slug (URL)')
+                    ->disabled()
+                    ->dehydrated(true),
+
                 TextInput::make('address')
                     ->label('Dirección')
                     ->required(),
+
                 TextInput::make('email')
                     ->label('E-mail')
                     ->email()
                     ->required(),
+
                 TextInput::make('phonenumber')
                     ->label('Teléfono (fijo o celular)')
                     ->tel()
                     ->required(),
             ]);
+    }
+
+    /**
+     * Ajusta el slug para que quede único:
+     * - Si no existe, usa $base.
+     * - Si ya existe, agrega "-####" donde #### son los últimos 4 de identification.
+     * - Si aún choca, agrega "-1", "-2", ...
+     */
+    protected function makeCompanySlugUnique(string $base, ?string $identification, $ignoreId = null): string
+    {
+        $base = $base ?: 'drogueria';
+
+        // Últimos 4 dígitos del NIT (solo números).
+        $digits = preg_replace('/\D+/', '', (string) $identification);
+        $suffix4 = $digits ? substr($digits, -4) : null;
+
+        // OJO: ajusta el Model y columna según tu app.
+        $query = \App\Models\Team::query();
+
+        if ($ignoreId) {
+            $query->whereKeyNot($ignoreId);
+        }
+
+        // 1) probar base
+        if (! (clone $query)->where('slug', $base)->exists()) {
+            return $base;
+        }
+
+        // 2) probar base-#### si hay identification
+        $candidate = $suffix4 ? "{$base}-{$suffix4}" : $base;
+
+        if (! (clone $query)->where('slug', $candidate)->exists()) {
+            return $candidate;
+        }
+
+        // 3) fallback incremental
+        $i = 1;
+        while ((clone $query)->where('slug', "{$candidate}-{$i}")->exists()) {
+            $i++;
+        }
+
+        return "{$candidate}-{$i}";
     }
 
     protected function handleRegistration(array $data): Team
@@ -72,7 +137,7 @@ class RegisterTeam extends RegisterTenant
         // Validaciones extra opcionales
         return Team::create($data);
     }
-    
+
     /**
      * Crea (o recupera) roles scoped al team.
      * @return array [Role $adminRole, Role $consultantRole]
@@ -96,7 +161,7 @@ class RegisterTeam extends RegisterTenant
         $user->assignRole($adminRole);
     }
 
-     /**
+    /**
      * Crea permisos base y sincroniza al rol administrador.
      */
     private function createPermissionsAndSyncRole(Team $team, Role $roleAdmin): void

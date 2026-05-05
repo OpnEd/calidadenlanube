@@ -10,6 +10,13 @@ class EditProductReception extends EditRecord
 {
     protected static string $resource = ProductReceptionResource::class;
 
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        unset($data['status']);
+
+        return $data;
+    }
+
     protected function getHeaderActions(): array
     {
         return [

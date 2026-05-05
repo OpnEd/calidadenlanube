@@ -25,7 +25,7 @@ class ProductResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('product_category_id')
+                Forms\Components\Select::make('category_id')
                     ->relationship(name: 'product_category', titleAttribute: 'name')
                     ->searchable()
                     ->preload()
@@ -78,12 +78,27 @@ class ProductResource extends Resource
                     ->placeholder('Presentación comercial - concentración')
                     ->maxLength(255),
                 Forms\Components\Toggle::make('fractionable')
+                    ->label('Fraccionable')
                     ->live()
                     ->inline(false)
                     ->required(),
                 Forms\Components\TextInput::make('conversion_factor')
+                    ->label('Factor de conversion')
+                    ->helperText('Numero de unidades minimas almacenables por una unidad comercial.')
                     ->hidden(fn(Get $get): bool => ! $get('fractionable'))
                     ->numeric()
+                    ->required(fn(Get $get): bool => (bool) $get('fractionable'))
+                    ->minValue(1)
+                    ->step(1)
+                    ->default(1),
+                Forms\Components\TextInput::make('min_fraction')
+                    ->label('Fraccion minima')
+                    ->helperText('Cantidad minima consumible en la unidad de medida del producto. Ejemplo: 0.1 mL.')
+                    ->hidden(fn(Get $get): bool => ! $get('fractionable'))
+                    ->numeric()
+                    ->required(fn(Get $get): bool => (bool) $get('fractionable'))
+                    ->minValue(0.0001)
+                    ->step(0.0001)
                     ->default(null),
                 Forms\Components\FileUpload::make('image')
                     ->image(),
@@ -114,10 +129,17 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('description')
                     ->searchable(),
                 Tables\Columns\IconColumn::make('fractionable')
+                    ->label('Fraccionable')
                     ->boolean()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('conversion_factor')
+                    ->label('Factor conversion')
                     ->numeric()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('min_fraction')
+                    ->label('Fraccion minima')
+                    ->numeric(decimalPlaces: 4)
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\ImageColumn::make('image'),

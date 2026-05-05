@@ -1,4 +1,11 @@
 <div class="space-y-6">
+                            @php
+                                // seguridad: comprobar que userEnrollments es Collection
+                                $hasEnrollments = $userEnrollments instanceof \Illuminate\Support\Collection;
+                                $enrollment = $hasEnrollments ? $userEnrollments->get($course->id) : null;
+                                // Si $enrollment es el modelo, sacamos su id; si userEnrollments fue pluck, get() puede devolver id directamente
+                                $enrollmentId = $enrollment?->id ?? $enrollment;
+                            @endphp
                         
     {{-- Cuadrícula de cursos --}}
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -26,9 +33,14 @@
                 {{-- Cuerpo de la tarjeta --}}
                 <div class="flex flex-1 flex-col justify-between p-6">
                     <div class="flex-1">
-                        <x-filament::link href="#" class="block mt-2">
+                    @if ($hasEnrollments && $enrollmentId)
+                        <x-filament::link wire:click="goToEnrollment({{ $enrollmentId }})" class="block mt-2">
                             <p class="text-xl font-semibold text-gray-900 dark:text-white">{{ $course->title }}</p>
                         </x-filament::link>
+
+                    @else
+                        <p class="text-xl font-semibold text-gray-900 dark:text-white">{{ $course->title }}</p>
+                    @endif
 
                         @if ($course->objective)
                             <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
@@ -47,13 +59,6 @@
                         </div>
 
                         <div>
-                            @php
-                                // seguridad: comprobar que userEnrollments es Collection
-                                $hasEnrollments = $userEnrollments instanceof \Illuminate\Support\Collection;
-                                $enrollment = $hasEnrollments ? $userEnrollments->get($course->id) : null;
-                                // Si $enrollment es el modelo, sacamos su id; si userEnrollments fue pluck, get() puede devolver id directamente
-                                $enrollmentId = $enrollment?->id ?? $enrollment;
-                            @endphp
 
                             @if ($hasEnrollments && $enrollmentId)
                                 {{-- Si el usuario está inscrito, mostrar botón de acción --}}

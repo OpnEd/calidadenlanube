@@ -4,42 +4,70 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\AnesthesiaSheetResource\Pages;
 use App\Filament\Resources\AnesthesiaSheetResource\RelationManagers;
+use App\Filament\Schemas\PetFormSchema;
 use App\Models\AnesthesiaSheet;
+use App\Models\Customer;
 use Filament\Forms;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
+use Filament\Infolists\Components\Grid;
+use Filament\Infolists\Components\IconEntry;
+use Filament\Infolists\Components\KeyValueEntry;
+use Filament\Infolists\Components\Section as InfolistSection;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\Actions\Action;
+use Filament\Notifications\Notification;
 
 class AnesthesiaSheetResource extends Resource
 {
     protected static ?string $model = AnesthesiaSheet::class;
 
     protected static ?string $navigationGroup = 'Clínica';
+    protected static ?string $pluralModelLabel = 'Hojas de Anestesia';
+    protected static ?string $modelLabel = 'Hoja de Anestesia';
+
+    public static function getNavigationLabel(): string
+    {
+        return __('clinic.anesthesia_sheets');
+    }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Section::make('Anesthesia Sheet Header')
+                Section::make(__('clinic.general_info'))
                     ->columns(2)
                     ->schema([
-                        Forms\Components\TextInput::make('recipe_number')
-                            ->label(__('Recipe number'))
-                            ->visible(fn() => self::userHasDirectorTecnicoRole()),
+                        Forms\Components\Select::make('recipebook_id')
+                            ->label(__('clinic.consecutive'))
+                            ->relationship('recipebook', 'consecutive')
+                            ->disabled(),
 
                         Forms\Components\Select::make('customer_id')
-                            ->relationship('customer', 'identification')
+                            ->label(__('clinic.owner'))
+                            ->searchable()
+                            ->options(function () {
+                                return Customer::where('team_id', Filament::getTenant()->id)
+                                    ->get()
+                                    ->mapWithKeys(function ($customer) {
+                                        return [
+                                            $customer->id => "{$customer->name} ({$customer->identification})"
+                                        ];
+                                    })->toArray();
+                            })
                             ->required()
                             ->live(),
 
                         Forms\Components\Select::make('pet_id')
-                            ->label('Pet')
+                            ->label(__('clinic.patient'))
                             ->relationship(
                                 name: 'pet',
                                 titleAttribute: 'name',
@@ -58,36 +86,7 @@ class AnesthesiaSheetResource extends Resource
                             ->searchable()
                             ->disabled(fn(Get $get) => blank($get('customer_id')))
                             ->live()
-                            ->createOptionForm([
-                                Forms\Components\TextInput::make('name')
-                                    ->required()
-                                    ->maxLength(255),
-
-                                Forms\Components\Select::make('species')
-                                    ->options([
-                                        'dog' => __('Dog'),
-                                        'cat' => __('Cat'),
-                                        'bird' => __('Bird'),
-                                        'reptile' => __('Reptile'),
-                                        'other' => __('Other'),
-                                    ])
-                                    ->required(),
-
-                                Forms\Components\Select::make('gender')
-                                    ->options([
-                                        'male' => __('Male'),
-                                        'female' => __('Female'),
-                                        'other' => __('Other'),
-                                    ])
-                                    ->required(),
-
-                                Forms\Components\DatePicker::make('birth_date')
-                                    ->required(),
-
-                                Forms\Components\TextInput::make('weight')
-                                    ->label('Peso (kg)')
-                                    ->numeric(),
-                            ])
+                            ->createOptionForm(PetFormSchema::schema(false))
                             ->createOptionAction(function (Action $action) {
                                 return $action
                                     // Evita crear una mascota si no hay cliente seleccionado arriba
@@ -97,42 +96,47 @@ class AnesthesiaSheetResource extends Resource
                                         $data['customer_id'] = $get('customer_id');
                                         return $data;
                                     });
-                            }),
+                            })
+                            ->editOptionForm(PetFormSchema::schema(false)),
 
                         Forms\Components\Select::make('surgeon_id')
+                            ->label(__('clinic.surgeon'))
                             ->relationship('surgeon', 'name')
-                            ->required(),
+                            ->required()
+                            ->searchable(),
 
                         Forms\Components\DateTimePicker::make('anesthesia_start_time')
+                            ->label(__('clinic.anesthesia_start_time'))
                             ->nullable(),
                     ]),
 
-                Section::make('Anamnesis')
-                    ->description('Asegúrate de registrar como mínimo horas de ayuno:, dieta reciente:, tratamientos y medicación actual:, enfermedades actuales:, concurrentes: y anteriores:, otras cirugías o anestesias.')
+                Section::make(__('clinic.anamnesis'))
+                    ->description(__('clinic.anamnesis_description'))
                     ->schema([
                         Forms\Components\KeyValue::make('anamnesis')
-                            ->keyLabel('Ítem')
-                            ->valueLabel('Descripción')
-                            ->keyPlaceholder('ej.: Horas de ayuno:')
-                            ->valuePlaceholder('ej.: 5 horas')
-                            ->addActionLabel('Agregar ítem')
+                            ->keyLabel(__('clinic.item'))
+                            ->valueLabel(__('clinic.description'))
+                            ->keyPlaceholder(__('clinic.placeholder_anamnesis_key'))
+                            ->valuePlaceholder(__('clinic.placeholder_anamnesis_value'))
+                            ->addActionLabel(__('clinic.add_item'))
                             ->columnSpanFull(),
                     ])
                     ->collapsed(),
 
-                Section::make('Anesthesia Notes')
-                    ->description('Asegúrate de registrar información relativa a distintos insumos empleados como tubos endotraqueales, oxígeno y otros. No olvides el registro ASA(I, II, III, IV, V, E). ')
+                Section::make(__('clinic.anesthesia_notes'))
+                    ->description(__('clinic.anesthesia_notes_description'))
                     ->schema([
                         Forms\Components\KeyValue::make('anesthesia_notes')
-                            ->keyLabel('Ítem')
-                            ->valueLabel('Descripción')
-                            ->keyPlaceholder('ej.: Calibre tubo endotraqueal:')
-                            ->valuePlaceholder('ej.: 5 mm')
-                            ->addActionLabel('Agregar ítem')
+                            ->keyLabel(__('clinic.item'))
+                            ->valueLabel(__('clinic.description'))
+                            ->keyPlaceholder(__('clinic.placeholder_notes_key'))
+                            ->valuePlaceholder(__('clinic.placeholder_notes_value'))
+                            ->addActionLabel(__('clinic.add_item'))
                             ->columnSpanFull(),
                     ])
                     ->collapsed(),
                 Forms\Components\DateTimePicker::make('anesthesia_end_time')
+                    ->label(__('clinic.anesthesia_end_time'))
                     ->nullable(),
             ]);
     }
@@ -141,37 +145,52 @@ class AnesthesiaSheetResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('recipebook.consecutive')
+                    ->label(__('clinic.recipe_number'))
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('pet.name')
-                    ->numeric()
+                    ->label(__('clinic.pet_name'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('user.name')
-                    ->label(__('Created by'))
-                    ->numeric()
+                    ->label(__('clinic.created_by'))
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('customer.name')
-                    ->numeric()
+                    ->label(__('clinic.owner'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('surgeon.name')
-                    ->numeric()
+                    ->label(__('clinic.surgeon'))
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'opened' => 'success',
+                        'closed' => 'danger',
+                        'canceled' => 'warning',
+                    })
                     ->sortable(),
                 Tables\Columns\TextColumn::make('anesthesia_start_time')
+                    ->label(__('clinic.anesthesia_start_time'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('anesthesia_end_time')
+                    ->label(__('clinic.anesthesia_end_time'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label(__('clinic.created_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
+                    ->label(__('clinic.updated_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('deleted_at')
+                    ->label(__('clinic.deleted_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -181,20 +200,104 @@ class AnesthesiaSheetResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
-                    //Tables\Actions\ViewAction::make(),
-                    Tables\Actions\EditAction::make()
-                        ->visible(
-                            fn($record) => ($record->status === 'opened') &&
-                                (self::userHasDirectorTecnicoRole() || $record->user_id === auth()->id())
-                        ),
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\Action::make('cancel')
+                        ->label(__('clinic.cancel_sheet'))
+                        ->color('danger')
+                        ->action(function (AnesthesiaSheet $record) {
+                            $record->update(['status' => 'canceled']);
+                            Notification::make()
+                                ->title(__('clinic.anesthesia_sheet_canceled'))
+                                ->icon('phosphor-x-circle')
+                                ->color('danger')
+                                ->send();
+                        }),
                 ]),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
-                ]),
+                //
+            ]);
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                InfolistSection::make('Resumen')
+                    ->icon('heroicon-o-clipboard-document-list')
+                    ->columns(4)
+                    ->schema([
+                        TextEntry::make('code')
+                            ->label('Código')
+                            ->placeholder('N/A')
+                            ->weight('bold'),
+                        TextEntry::make('recipebook.consecutive')
+                            ->label(__('clinic.recipe_number'))
+                            ->placeholder('N/A')
+                            ->badge()
+                            ->color('primary'),
+                        TextEntry::make('status')
+                            ->label(__('clinic.status'))
+                            ->badge()
+                            ->color(fn(string $state): string => match ($state) {
+                                'opened' => 'success',
+                                'closed' => 'danger',
+                                'canceled' => 'warning',
+                                default => 'gray',
+                            }),
+                        IconEntry::make('consumed')
+                            ->label('Consumida')
+                            ->boolean(),
+                    ]),
+
+                InfolistSection::make('Detalles Clínicos')
+                    ->icon('heroicon-o-heart')
+                    ->columns(4)
+                    ->schema([
+                        TextEntry::make('customer.name')
+                            ->label(__('clinic.owner'))
+                            ->placeholder('N/A'),
+                        TextEntry::make('pet.name')
+                            ->label(__('clinic.patient'))
+                            ->placeholder('N/A'),
+                        TextEntry::make('surgeon.name')
+                            ->label(__('clinic.surgeon'))
+                            ->placeholder('N/A'),
+                        TextEntry::make('user.name')
+                            ->label(__('clinic.created_by'))
+                            ->placeholder('N/A'),
+                        TextEntry::make('anesthesia_start_time')
+                            ->label(__('clinic.anesthesia_start_time'))
+                            ->dateTime('d/m/Y H:i')
+                            ->placeholder('N/A'),
+                        TextEntry::make('anesthesia_end_time')
+                            ->label(__('clinic.anesthesia_end_time'))
+                            ->dateTime('d/m/Y H:i')
+                            ->placeholder('N/A'),
+                        TextEntry::make('closed_at')
+                            ->label('Cerrada el')
+                            ->dateTime('d/m/Y H:i')
+                            ->placeholder('N/A'),
+                    ]),
+
+                Grid::make(2)
+                    ->schema([
+                        InfolistSection::make('Anamnesis')
+                            ->icon('heroicon-o-document-text')
+                            ->schema([
+                                KeyValueEntry::make('anamnesis')
+                                    ->label(__('clinic.anamnesis'))
+                                    ->placeholder('Sin registros'),
+                            ]),
+                        InfolistSection::make('Notas de Anestesia')
+                            ->icon('heroicon-o-document-duplicate')
+                            ->schema([
+                                KeyValueEntry::make('anesthesia_notes')
+                                    ->label(__('clinic.anesthesia_notes'))
+                                    ->placeholder('Sin registros'),
+                            ]),
+                    ]),
             ]);
     }
 
@@ -202,6 +305,7 @@ class AnesthesiaSheetResource extends Resource
     {
         return [
             RelationManagers\AnesthesiaItemsRelationManager::class,
+            RelationManagers\VersionsRelationManager::class,
         ];
     }
 
@@ -210,6 +314,7 @@ class AnesthesiaSheetResource extends Resource
         return [
             'index' => Pages\ListAnesthesiaSheets::route('/'),
             'create' => Pages\CreateAnesthesiaSheet::route('/create'),
+            'view' => Pages\ViewAnesthesiaSheet::route('/{record}'),
             'edit' => Pages\EditAnesthesiaSheet::route('/{record}/edit'),
         ];
     }
@@ -220,29 +325,5 @@ class AnesthesiaSheetResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
-    }
-
-    // Función para verificar si el usuario tiene el rol 'Director Técnico' en el tenant actual
-    public static function userHasDirectorTecnicoRole(): bool
-    {
-        $user = auth()->user();
-        $team = \Filament\Facades\Filament::getTenant();
-
-        if (!$team || !$user) {
-            return false;
-        }
-
-        $teamId = $team->id;
-
-        $role = $user->roles()
-            ->where('model_has_roles.team_id', $teamId)
-            ->where(function ($query) use ($teamId) {
-                $query->whereNull('roles.team_id')
-                    ->orWhere('roles.team_id', $teamId);
-            })
-            ->where('roles.name', 'Director')
-            ->first();
-
-        return (bool) $role;
     }
 }

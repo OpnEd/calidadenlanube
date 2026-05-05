@@ -118,6 +118,10 @@ enum PermissionType: string implements HasLabel
     case RESTORE_INVOICE_ITEMS      = 'restore-invoice-items';
     case FORCE_DELETE_INVOICE_ITEMS = 'force-delete-invoice-items';
 
+        // Kardex
+    case VIEW_KARDEX         = 'view-kardex';
+    case CREATE_KARDEX       = 'create-kardex';
+
         // Manufacturer
     case VIEW_MANUFACTURER         = 'view-manufacturer';
     case CREATE_MANUFACTURER       = 'create-manufacturer';
@@ -198,6 +202,7 @@ enum PermissionType: string implements HasLabel
     case RESTORE_PURCHASE      = 'restore-purchase';
     case FORCE_DELETE_PURCHASE = 'force-delete-purchase';
     case CONFIRM_PURCHASE      = 'confirm-purchase';
+    case RECEIVE_PURCHASE      = 'receive-purchase';
 
         // PurchaseItem
     case VIEW_PURCHASE_ITEM         = 'view-purchase-item';
@@ -442,6 +447,10 @@ enum PermissionType: string implements HasLabel
             self::RESTORE_INVOICE_ITEMS      => 'Restaurar ítems de Facturas',
             self::FORCE_DELETE_INVOICE_ITEMS => 'Forzar la eliminación de ítems de Facturas',
 
+            // kardex
+            self::VIEW_KARDEX         => 'Ver Kardex',
+            self::CREATE_KARDEX       => 'Crear Kardex',
+
             // Manufacturer
             self::VIEW_MANUFACTURER         => 'Ver Fabricantes',
             self::CREATE_MANUFACTURER       => 'Crear Fabricantes',
@@ -522,6 +531,7 @@ enum PermissionType: string implements HasLabel
             self::RESTORE_PURCHASE      => 'Restaurar Compras',
             self::FORCE_DELETE_PURCHASE => 'Forzar la eliminación de Compras',
             self::CONFIRM_PURCHASE      => 'Confirmar Órdenes de Compra',
+            self::RECEIVE_PURCHASE      => 'Recibir Pedidos',
 
             // PurchaseItem
             self::VIEW_PURCHASE_ITEM         => 'Ver Ítems de Compra',

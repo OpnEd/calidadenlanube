@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class AnesthesiaSheetItem extends Model
 {
@@ -30,10 +33,23 @@ class AnesthesiaSheetItem extends Model
     {
         return $this->belongsTo(AnesthesiaSheet::class);
     }
+
+    public function versions(): MorphMany
+    {
+        return $this->morphMany(ModelVersion::class, 'versionable')
+            ->latest();
+    }
+    
     public function inventory(): BelongsTo
     {
         return $this->belongsTo(Inventory::class);
     }
+
+    public function kardexEntries(): HasMany
+    {
+        return $this->hasMany(KardexEntry::class);
+    }
+    
     public function getDoseMeasureAttribute($value)
     {
         return $value ?? 0; // Ensure dose_measure is never null

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\AnesthesiaSheet;
 use App\Models\DispatchItems;
+use App\Models\ProductReceptionItem;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use Illuminate\Support\ServiceProvider;
@@ -22,6 +23,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Notifications\DatabaseNotification;
 use App\Models\TeamNotification;
 use App\Observers\AnesthesiaSheetObserver;
+use App\Observers\ProductReceptionItemObserver;
 use App\Repositories\CourseRepository;
 use App\Repositories\Interfaces\CourseInterface;
 
@@ -87,5 +89,6 @@ class AppServiceProvider extends ServiceProvider
         Sale::observe(SaleObserver::class);
         SaleItem::observe(SaleItemObserver::class);
         AnesthesiaSheet::observe(AnesthesiaSheetObserver::class);
+        ProductReceptionItem::observe(ProductReceptionItemObserver::class);
     }
 }
