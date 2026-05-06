@@ -9,6 +9,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\PermissionRegistrar;
+use Filament\Facades\Filament;
 use App\Models\Team;
 use App\Observers\DispatchItemsObserver;
 use App\Observers\SaleItemObserver;
@@ -72,7 +73,12 @@ class AppServiceProvider extends ServiceProvider
         // Implicitly grant "Super Admin" role all permissions
         // This works in the app by using gate-related functions like auth()->user->can() and @can()
         Gate::before(function ($user, $ability) {
-            return $user->hasRole('Super Admin') ? true : null;
+            if (Filament::getCurrentPanel()?->getId() === 'tenantManager') {
+                return $user->roles()
+                    ->where('name', 'Super Admin')
+                    ->whereNull('model_has_roles.team_id')
+                    ->exists() ? true : null;
+            }
         });
 
         // Suponiendo que hay un team seleccionado (ej. en la sesión)

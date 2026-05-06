@@ -20,6 +20,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use App\Traits\HasTeamRoles;
+use App\Traits\HasTeamAuthorization;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Notifications\DatabaseNotification;
@@ -30,7 +31,8 @@ class User extends Authenticatable implements FilamentUser, HasTenants, HasAvata
     use HasFactory,
         Notifiable,
         HasRoles,
-        HasTeamRoles;
+        HasTeamRoles,
+        HasTeamAuthorization;
     //MultiTenantHasRoles;
 
     /**
@@ -92,7 +94,10 @@ class User extends Authenticatable implements FilamentUser, HasTenants, HasAvata
         } */
 
         if ($panel->getId() === 'tenantManager') {
-            return str_ends_with($this->email, '@calidadenlanube.net.co');
+            return $this->roles()
+                ->where('name', 'Super Admin')
+                ->whereNull('model_has_roles.team_id')
+                ->exists();
         }
 
         if ($panel->getId() === 'admin') {

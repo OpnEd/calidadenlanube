@@ -37,12 +37,20 @@ trait HasTeamRoles
         $teamId = $team->id;
 
         return $this->roles()
+            ->where(function ($query) use ($teamId) {
+                $query->where('model_has_roles.team_id', $teamId)
+                      ->orWhereNull('model_has_roles.team_id');
+            })
+            ->orderByRaw('model_has_roles.team_id IS NULL DESC') // Prioriza el rol global si existe
+            ->first();
+
+        /* return $this->roles()
             ->where('model_has_roles.team_id', $teamId)
             ->where(function ($query) use ($teamId) {
                 $query->whereNull('roles.team_id')
                       ->orWhere('roles.team_id', $teamId);
             })
-            ->first();
+            ->first(); */
     }
 
     /**
