@@ -2,20 +2,15 @@
 
 namespace App\Filament\TenantManager\Resources\DispatchResource\RelationManagers;
 
-use App\Models\CentralProductPrice;
+use App\Models\PurchaseItem;
+use App\Models\Stock;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
-use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Filament\Forms\Get;
-use Filament\Forms\Set;
 use Filament\Tables\Actions\ReplicateAction;
-use Filament\Forms\Components\Select;
-use App\Models\Stock;
-use App\Models\Batch;
+use Filament\Tables\Table;
 
 class ItemsRelationManager extends RelationManager
 {
@@ -26,41 +21,35 @@ class ItemsRelationManager extends RelationManager
         return $form
             ->schema([
                 Forms\Components\Select::make('batch_id')
-                    ->relationship('batch', 'code')
+                    ->relationship('central_batch', 'code')
                     ->searchable()
                     ->options(function (Get $get): array {
-                        // Obtén el product_id vía purchaseItem
                         $purchaseItemId = $get('purchase_item_id');
+
                         if (! $purchaseItemId) {
                             return [];
                         }
-                        $productId = \App\Models\PurchaseItem::find($purchaseItemId)?->product_id;
+
+                        $productId = PurchaseItem::find($purchaseItemId)?->product_id;
+
                         if (! $productId) {
                             return [];
                         }
-                        // Consulta sólo stocks con quantity > 0
+
                         return Stock::query()
                             ->where('product_id', $productId)
                             ->where('quantity', '>', 0)
-                            ->with('batch')
+                            ->with('central_batch')
                             ->get()
-                            ->pluck('batch.code', 'batch.id')
+                            ->pluck('central_batch.code', 'central_batch.id')
                             ->toArray();
                     })
                     ->required()
                     ->live(),
                 Forms\Components\TextInput::make('quantity')
                     ->minValue(1)
-                    ->maxValue(
-                        fn(Get $get) => Stock::where([
-                            ['batch_id', $get('batch_id')],
-                            // puedes chequear product_id también si lo deseas
-                        ])->value('quantity') ?? 0
-                    )
-                    ->helperText(
-                        fn(Get $get) => 'Stock disponible: '
-                            . (Stock::where('batch_id', $get('batch_id'))->value('quantity') ?? 0) . 'unidades...'
-                    )
+                    ->maxValue(fn (Get $get) => $this->getAvailableStockForSelectedBatch($get))
+                    ->helperText(fn (Get $get) => 'Stock disponible: ' . $this->getAvailableStockForSelectedBatch($get) . ' unidades...'),
             ]);
     }
 
@@ -72,14 +61,14 @@ class ItemsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('purchaseItem.product.name')
                     ->label('Producto')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('batch.code'),
+                Tables\Columns\TextColumn::make('central_batch.code'),
                 Tables\Columns\TextColumn::make('quantity'),
                 Tables\Columns\TextInputColumn::make('price'),
                 Tables\Columns\TextColumn::make('total')
                     ->label('Total')
                     ->getStateUsing(function ($record) {
                         return number_format(($record->quantity ?? 0) * ($record->price ?? 0), 2);
-                    })
+                    }),
             ])
             ->filters([
                 //
@@ -92,12 +81,33 @@ class ItemsRelationManager extends RelationManager
                     Tables\Actions\EditAction::make(),
                     ReplicateAction::make(),
                     Tables\Actions\DeleteAction::make(),
-                ])
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    protected function getAvailableStockForSelectedBatch(Get $get): int
+    {
+        $purchaseItemId = $get('purchase_item_id');
+        $centralBatchId = $get('batch_id');
+
+        if (! $purchaseItemId || ! $centralBatchId) {
+            return 0;
+        }
+
+        $productId = PurchaseItem::find($purchaseItemId)?->product_id;
+
+        if (! $productId) {
+            return 0;
+        }
+
+        return (int) (Stock::query()
+            ->where('product_id', $productId)
+            ->where('central_batch_id', $centralBatchId)
+            ->value('quantity') ?? 0);
     }
 }

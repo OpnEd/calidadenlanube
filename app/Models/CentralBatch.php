@@ -28,7 +28,7 @@ class CentralBatch extends Model
 
     public function dispatchItems(): HasMany
     {
-        return $this->hasMany(DispatchItems::class);
+        return $this->hasMany(DispatchItems::class, 'batch_id');
     }
 
     public function manufacturer(): BelongsTo

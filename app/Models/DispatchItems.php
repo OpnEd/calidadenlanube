@@ -37,6 +37,11 @@ class DispatchItems extends Model
     
     public function batch(): BelongsTo
     {
-        return $this->belongsTo(Batch::class);
+        return $this->belongsTo(CentralBatch::class, 'batch_id');
+    }
+
+    public function central_batch(): BelongsTo
+    {
+        return $this->belongsTo(CentralBatch::class, 'batch_id');
     }
 }
