@@ -17,13 +17,20 @@ use Filament\Forms\Components\Fieldset;
 use Filament\Tables\Actions\Action;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Redirect;
+use App\Notifications\Notification;
+use App\Enums\PurchaseStatus;
+use Filament\Tables\Enums\ActionsPosition;
 
 class PurchaseResource extends Resource
 {
     protected static ?string $model = Purchase::class;
 
-    protected static ?string $navigationGroup = 'Transactions';
-    protected static ?string $navigationIcon = 'phosphor-shopping-cart';
+    protected static ?string $navigationGroup = 'Operaciones externas';
+    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationLabel = 'Pedidos del cliente';
+    protected static ?string $pluralModelLabel = 'Pedidos del cliente';
+    protected static ?string $modelLabel = 'Pedido del cliente';
+    protected static ?string $slug = 'operaciones-externas/pedidos-del-cliente';
 
     public static function getNavigationBadge(): ?string
     {
@@ -44,38 +51,34 @@ class PurchaseResource extends Resource
     {
         return $form
             ->schema([
-                Section::make('Order details')
+                Section::make('Detalles del pedido')
                     ->schema([
-                        Forms\Components\TextInput::make('id')
-                            ->label('# Pruchase')
-                            ->readOnly(),
-                        Forms\Components\Select::make('team_id')
-                            ->relationship('team', 'name')
-                            ->required(),
-                        Forms\Components\Select::make('supplier_id')
-                            ->relationship('supplier', 'name')
-                            ->required(),
-                        Forms\Components\Select::make('status')
-                            ->options([
-                                'pending' => 'Pending',
-                                'confirmed' => 'Confirmed',
-                                'in progress' => 'In Progress',
-                                'ready' => 'Ready',
-                                'dispatched' => 'Dispatched',
-                                'delivered' => 'Delivered',
-                            ]),
-                        Forms\Components\TextInput::make('total')
+                        Forms\Components\Placeholder::make('code')
+                            ->label('Código')
+                            ->inlineLabel()
+                            ->content(fn ($record) => $record->code),
+                        Forms\Components\Placeholder::make('team_name')
+                            ->label('Cliente')
+                            ->inlineLabel()
+                            ->content(fn ($record) => $record->team?->name),
+                        Forms\Components\Placeholder::make('status')
+                            ->label('Estado')
+                            ->inlineLabel()
+                            ->content(fn ($record) => $record->status->getLabel()),
+                        Forms\Components\Placeholder::make('total')
+                            ->label('Total')
+                            ->inlineLabel()
+                            ->content(fn ($record) => $record->total),
+                        Forms\Components\Textarea::make('observations')
+                            ->label('Observaciones')
                             ->readOnly()
-                            ->prefix('$'),
+                            ->columnSpanFull(),
+                        Forms\Components\KeyValue::make('data')
+                            ->label('Datos adicionales')
+                            ->columnSpanFull()
+                            ->disabled()
                     ])
                     ->columns(4)
-                    ->collapsed(),
-                Section::make('Order meta-data')
-                    ->schema([
-                        Forms\Components\Textarea::make('observations'),
-                        Forms\Components\KeyValue::make('data')
-                    ])
-                    ->columns(2)
                     ->collapsed(),
             ]);
     }
@@ -84,25 +87,21 @@ class PurchaseResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('id')
-                    ->label('# Purchase')
-                    ->numeric()
+                Tables\Columns\TextColumn::make('code')
+                    ->label('Código')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('team.name')
-                    ->numeric()
+                    ->label('Cliente')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
-                    ->color(fn(string $state): string => match ($state) {
-                        'pending' => 'danger',
-                        'confirmed' => 'primary',
-                        'in progress' => 'info',
-                        'ready' => 'amber',
-                        'dispatched' => 'gray',
-                        'delivered' => 'success',
-                    }),
+                    ->label('Estado')
+                    ->sortable()
+                    ->icon(fn(PurchaseStatus $state) => $state->getIcon())
+                    ->tooltip(fn(PurchaseStatus $state) => $state->getLabel()),
                 Tables\Columns\TextColumn::make('total')
+                    ->label('Total')
                     ->numeric()
-                    ->sortable(),
+                    ->prefix('$ '),
                 Tables\Columns\TextColumn::make('deleted_at')
                     ->dateTime()
                     ->sortable()
@@ -124,7 +123,7 @@ class PurchaseResource extends Resource
                     Tables\Actions\ViewAction::make()
                         ->label('Enlist items')
                         ->icon('phosphor-check-square')
-                        ->visible(fn(Purchase $record): bool => $record->status === 'confirmed' && $record->items()->where('enlisted', '!=', 1)->exists()),
+                        ->visible(fn(Purchase $record): bool => $record->status->value === 'confirmed' && $record->items()->where('enlisted', '!=', 1)->exists()),
                     Action::make('createDispatch')
                         ->label('Dispatch')
                         ->icon('heroicon-o-truck')
@@ -132,7 +131,7 @@ class PurchaseResource extends Resource
 
                             // Verificar si todos los PurchaseItems están enlistados
                             if ($record->items()->where('enlisted', '!=', 1)->exists()) {
-                                \Filament\Notifications\Notification::make()
+                                Notification::make()
                                     ->title('Falta verificar productos')
                                     ->color('danger')
                                     ->send();
@@ -143,6 +142,13 @@ class PurchaseResource extends Resource
                             // a 'in progress'
                             $dispatch = app(\App\Services\DispatchService::class)->createFromPurchase($record);
 
+                            Notification::make()
+                                ->title('Despacho creado')
+                                ->body('El despacho ha sido creado exitosamente y la compra está en progreso.')
+                                ->success()
+                                ->size('4xl') // Usando el tamaño de ejemplo
+                                ->send();
+
                             // Redirigir al edit del Dispatch recién creado
                             Redirect::to(
                                 \App\Filament\TenantManager\Resources\DispatchResource::getUrl('edit', ['record' => $dispatch->id])
@@ -150,7 +156,7 @@ class PurchaseResource extends Resource
                         })
                         ->requiresConfirmation()
                         ->color('info')
-                        ->visible(fn(Purchase $record): bool => $record->status === 'confirmed' && $record->items()->where('enlisted', '!=', 1)->doesntExist()),
+                        ->visible(fn(Purchase $record): bool => $record->status->value === 'confirmed' && $record->items()->where('enlisted', '!=', 1)->doesntExist()),
                     Action::make('editDispatch')
                         ->label('Edit Dispatch')
                         ->icon('phosphor-check-square')
@@ -162,14 +168,12 @@ class PurchaseResource extends Resource
                             );
                         })
                         ->color('info')
-                        ->visible(fn(Purchase $record): bool => $record->status === 'in progress'),
+                        ->visible(fn(Purchase $record): bool => $record->status->value === 'in progress'),
                 ]),
-            ])
+            ], position: ActionsPosition::BeforeColumns)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
+                    // Ninguna acción masiva por ahora
                 ]),
             ]);
     }
@@ -185,15 +189,14 @@ class PurchaseResource extends Resource
     {
         return [
             'index' => Pages\ListPurchases::route('/'),
-            'create' => Pages\CreatePurchase::route('/create'),
             'view' => Pages\ViewPurchase::route('/{record}'),
-            'edit' => Pages\EditPurchase::route('/{record}/edit'),
         ];
     }
 
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->whereNotNull('team_id')
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

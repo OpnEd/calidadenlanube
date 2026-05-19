@@ -58,7 +58,7 @@ class ItemsRelationManager extends RelationManager
     public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
         // Asumiendo que la relación es purchase->team->name
-        return ($ownerRecord->team?->name ?? '') . ' (Purchase No. ' . $ownerRecord->id . ')';
+        return ($ownerRecord->team?->name ?? '') . ' (Pedido No. ' . $ownerRecord->id . ')';
     }
 
     public function table(Table $table): Table
@@ -66,19 +66,26 @@ class ItemsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('name')
             ->columns([
-                Tables\Columns\TextColumn::make('product.name'),
+                Tables\Columns\TextColumn::make('product.name')
+                    ->label('Producto')
+                    ->sortable()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('quantity')
+                    ->label('Cantidad')
                     ->sortable()
                     ->numeric(),
                 Tables\Columns\TextColumn::make('price')
+                    ->label('Precio')
                     ->sortable()
                     ->numeric()
                     ->prefix('$'),
                 Tables\Columns\TextColumn::make('total')
+                    ->label('Total')
                     ->sortable()
                     ->numeric()
                     ->prefix('$'),
                 Tables\Columns\CheckboxColumn::make('enlisted')
+                    ->label('Alistado')
                     ->afterStateUpdated(function ($record, $state, $column) {
                         // Puedes emitir un evento para abrir un modal personalizado aquí.
                         // Por ejemplo, usando Filament:
@@ -107,9 +114,7 @@ class ItemsRelationManager extends RelationManager
                 //
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                //
             ]);
     }
 }

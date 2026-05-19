@@ -26,6 +26,8 @@ use Illuminate\Support\Facades\Gate;
 
 class ItemsRelationManager extends RelationManager
 {
+    use \App\Traits\Operations\HasPurchaseItemsFormAndTable;
+    
     protected static string $relationship = 'items';
     protected static ?string $title = 'Products';
     protected static ?string $model = Purchase::class;
@@ -33,44 +35,15 @@ class ItemsRelationManager extends RelationManager
 
     public function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                Forms\Components\Select::make('product_id')
-                    ->relationship('product', 'name', function ($query) {
-                        // Aquí aplicamos el scope inStock()
-                        $query->inStock();
-                    })
-                    ->searchable()
-                    ->preload()
-                    ->afterStateUpdated(function (?string $state, Set $set, Get $get) {
-                        // Obtener la cantidad actual o 1 si es nulo
-                        $quantity = $get('quantity') ?? 1;
-                        // Buscar el precio actualizado del producto seleccionado
-                        $price = CentralProductPrice::find($state)?->price ?? 0;
-                        $set('price', $price);
-                        $set('total', $quantity * $price);
-                    })
-                    ->live()
-                    ->required(),
-                Forms\Components\TextInput::make('quantity')
-                    ->required()
-                    ->numeric()
-                    ->default(1)
-                    ->afterStateUpdated(function (?string $state, Set $set, Get $get) {
-                        // Calcular y persistir price y total aunque no haya inputs
-                        $price = CentralProductPrice::find($get('product_id'))?->price ?? 0;
-                        $set('price', $price);
-                        $set('total', $state * $price);
-                    })
-                    ->live(),
-                Forms\Components\Hidden::make('price')
-                    ->default(0),
-                Forms\Components\Hidden::make('total')
-                    ->default(0),
-            ]);
+        return static::buildPurchaseItemsForm($form);
     }
 
     public function table(Table $table): Table
+    {
+        return static::buildPurchaseItemsTable($table);
+    }
+
+    /* public function table(Table $table): Table
     {
         return $table
             ->recordTitleAttribute('product_id')
@@ -187,7 +160,7 @@ class ItemsRelationManager extends RelationManager
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
-    }
+    } */
 
     /* protected function afterCreate(): void
     {

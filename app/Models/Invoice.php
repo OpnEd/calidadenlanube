@@ -18,6 +18,7 @@ class Invoice extends Model
     protected $fillable = [
         'team_id',
         'sale_id', // Relación con Venta que incluye la relación con el cliente
+        'dispatch_id', // Relación con Despacho que incluye la relación con el proveedor
         'code',
         'amount',
         'is_our', // el modelo Invoice almacena todas las facturas, incluidas las que vienen de terceros
@@ -59,10 +60,17 @@ class Invoice extends Model
     {
         return $this->hasMany(InvoiceItem::class);
     }
+
     // Relación inversa con Venta
     public function sale(): BelongsTo
     {
         return $this->belongsTo(Sale::class);
+    }
+
+    // Relación inversa con Despacho 
+    public function dispatch(): BelongsTo
+    {
+        return $this->belongsTo(Dispatch::class);
     }
 
     public function supplier(): BelongsTo

@@ -18,13 +18,14 @@ class AuthServiceProvider extends ServiceProvider
     public function register(): void
     {
         //
-    }/**
+    }
+    
+    /**
      * The model–policy mappings for the application.
      *
      * @var array<class-string, class-string>
      */
     protected $policies = [
-        // ← Aquí añades esta línea:
         Document::class => DocumentPolicy::class,
         ProductReception::class => ProductReceptionPolicy::class,
         Purchase::class => PurchasePolicy::class,

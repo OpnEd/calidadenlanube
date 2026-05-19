@@ -122,3 +122,97 @@ g. Si se da click al botón 'cancelar' estando en el formulario de edición en e
 *   **Notificaciones:** Sistema de alertas en base de datos y colas de trabajo para exportación de reportes masivos.
 *   **Auditoría:** Trazabilidad de acciones críticas (creación de ventas, ajustes de inventario).
 *   **Migraciones y Datos:** Estructura de base de datos optimizada y seeders preconfigurados para despliegue rápido.
+
+
+**Mapa De Trabajo**
+**Iteración A: cerrar huecos críticos**
+- `A1. Bloquear bypass desde admin`
+  Archivos: [app/Filament/Resources/PurchaseResource.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Filament/Resources/PurchaseResource.php:151)
+  Cambios: quitar o esconder las acciones `receive` y `clone_to_reception` del panel `admin`, o moverlas detrás de una verificación estricta que exija despacho completado.
+  Resultado esperado: desde `admin` la compra no puede saltar de `confirmed` a `delivered` sin pasar por `tenantManager`.
+
+- `A2. Evitar despachos duplicados`
+  Archivos: [app/Services/DispatchService.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Services/DispatchService.php:18), [database/migrations/2025_05_21_190850_create_dispatches_table.php](C:/Users/PAOLA/Herd/mce1.0.0/database/migrations/2025_05_21_190850_create_dispatches_table.php:17)
+  Cambios: agregar índice único a `dispatches.purchase_id`; en el servicio validar `dispatch()->exists()` y usar transacción.
+  Resultado esperado: una compra solo puede tener un despacho.
+
+- `A3. Bloquear CRUD peligroso de dispatch`
+  Archivos: [app/Filament/TenantManager/Resources/DispatchResource.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Filament/TenantManager/Resources/DispatchResource.php:29), [app/Filament/TenantManager/Resources/DispatchResource/Pages/CreateDispatch.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Filament/TenantManager/Resources/DispatchResource/Pages/CreateDispatch.php:9), [app/Filament/TenantManager/Resources/DispatchResource/Pages/EditDispatch.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Filament/TenantManager/Resources/DispatchResource/Pages/EditDispatch.php:13)
+  Cambios: deshabilitar `CreateDispatch`, ocultar `purchase_id` y `team_id` o volverlos solo lectura, quitar `Delete/ForceDelete/Restore` del flujo normal.
+  Resultado esperado: el despacho nace solo desde una `Purchase` confirmada.
+
+- `A4. Corregir policies faltantes`
+  Archivos: [app/Providers/AuthServiceProvider.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Providers/AuthServiceProvider.php:28), [app/Policies/DispatchPolicy.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Policies/DispatchPolicy.php:16), [app/Policies/PurchaseItemPolicy.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Policies/PurchaseItemPolicy.php:22)
+  Cambios: registrar `DispatchPolicy`; reemplazar los `return true` de `PurchaseItemPolicy` por reglas reales atadas a tenant y estado.
+  Resultado esperado: no dependemos solo de visibilidad de botones.
+
+**Iteración B: volver consistente la lógica de negocio**
+- `B1. Rehacer confirmación de compra`
+  Archivos: [app/Filament/Resources/PurchaseResource.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Filament/Resources/PurchaseResource.php:134), [app/Filament/Resources/PurchaseResource/RelationManagers/ItemsRelationManager.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Filament/Resources/PurchaseResource/RelationManagers/ItemsRelationManager.php:122), [app/Models/Purchase.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Models/Purchase.php:86)
+  Cambios: llevar la confirmación a un servicio dedicado; recalcular total en backend; validar que haya items y precios válidos antes de confirmar.
+  Resultado esperado: una sola forma confiable de pasar a `confirmed`.
+
+- `B2. Corregir lookup de precios`
+  Archivos: [app/Filament/Resources/PurchaseResource/Pages/ListPurchases.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Filament/Resources/PurchaseResource/Pages/ListPurchases.php:68), [app/Filament/Resources/PurchaseResource/RelationManagers/ItemsRelationManager.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Filament/Resources/PurchaseResource/RelationManagers/ItemsRelationManager.php:49)
+  Cambios: reemplazar `CentralProductPrice::find($productId)` por consulta por `product_id`.
+  Resultado esperado: cotizaciones y pedidos usan el precio correcto.
+
+- `B3. Hacer transaccional e idempotente la creación del dispatch`
+  Archivos: [app/Services/DispatchService.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Services/DispatchService.php:18)
+  Cambios: usar `DB::transaction()`, bloquear la `Purchase`, validar estado, validar inexistencia de despacho y crear items hijos dentro de la misma transacción.
+  Resultado esperado: sin registros parciales ni carreras.
+
+- `B4. Separar creación de dispatch de descuento de stock`
+  Archivos: [app/Services/DispatchService.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Services/DispatchService.php:35), [app/Observers/DispatchItemsObserver.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Observers/DispatchItemsObserver.php:10)
+  Cambios: no crear `dispatch_items` con lote `null` si eso dispara stock; mover descuento a una acción explícita de asignación/finalización o endurecer el observer para no tocar stock hasta que `batch_id` exista.
+  Resultado esperado: el stock solo cambia cuando hay lote y cantidad válidos.
+
+**Iteración C: alinear esquema y estados**
+- `C1. Unificar modelo de lote central`
+  Archivos: [database/migrations/2025_05_21_190902_create_dispatch_items_table.php](C:/Users/PAOLA/Herd/mce1.0.0/database/migrations/2025_05_21_190902_create_dispatch_items_table.php:17), [app/Models/DispatchItems.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Models/DispatchItems.php:38), [app/Filament/TenantManager/Resources/DispatchResource/RelationManagers/ItemsRelationManager.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Filament/TenantManager/Resources/DispatchResource/RelationManagers/ItemsRelationManager.php:23)
+  Cambios: migración correctiva para que `batch_id` apunte a `central_batches`; dejar una sola relación (`centralBatch` o similar) y usarla en todo el flujo.
+  Resultado esperado: DB, modelo y UI hablan del mismo lote.
+
+- `C2. Normalizar montos`
+  Archivos: [database/migrations/2025_03_24_170509_create_purchases_table.php](C:/Users/PAOLA/Herd/mce1.0.0/database/migrations/2025_03_24_170509_create_purchases_table.php:20), [app/Models/Purchase.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Models/Purchase.php:29)
+  Cambios: pasar `purchases.total` a decimal y cast a `decimal:2`.
+  Resultado esperado: no se pierden decimales.
+
+- `C3. Formalizar estados y auditoría`
+  Archivos: [database/migrations/2025_03_24_170509_create_purchases_table.php](C:/Users/PAOLA/Herd/mce1.0.0/database/migrations/2025_03_24_170509_create_purchases_table.php:16), [app/Filament/Resources/PurchaseResource.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Filament/Resources/PurchaseResource.php:55), [app/Filament/TenantManager/Resources/PurchaseResource.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Filament/TenantManager/Resources/PurchaseResource.php:63)
+  Cambios: decidir si se conservarán `ready` y `dispatched`; agregar columnas reales como `confirmed_at`; quitar referencias a columnas inexistentes.
+  Resultado esperado: el estado refleja el proceso real y se puede auditar.
+
+**Iteración D: endurecer UI operativa**
+- `D1. Reducir surface area de tenantManager/Purchase`
+  Archivos: [app/Filament/TenantManager/Resources/PurchaseResource.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Filament/TenantManager/Resources/PurchaseResource.php:48), [app/Filament/TenantManager/Resources/PurchaseResource/Pages/CreatePurchase.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Filament/TenantManager/Resources/PurchaseResource/Pages/CreatePurchase.php:9), [app/Filament/TenantManager/Resources/PurchaseResource/Pages/EditPurchase.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Filament/TenantManager/Resources/PurchaseResource/Pages/EditPurchase.php:13)
+  Cambios: volver el recurso casi de solo lectura operativa; no permitir crear compras ahí; limitar edición de `team_id`, `supplier_id`, `status`, `total`.
+  Resultado esperado: `tenantManager` procesa, no reescribe el pedido del cliente.
+
+- `D2. Corregir navegación del dispatch`
+  Archivos: [app/Filament/TenantManager/Resources/PurchaseResource.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Filament/TenantManager/Resources/PurchaseResource.php:166)
+  Cambios: usar `$record->dispatch?->id` en `editDispatch`.
+  Resultado esperado: siempre abre el despacho correcto.
+
+- `D3. Endurecer edición de líneas del dispatch`
+  Archivos: [app/Filament/TenantManager/Resources/DispatchResource/RelationManagers/ItemsRelationManager.php](C:/Users/PAOLA/Herd/mce1.0.0/app/Filament/TenantManager/Resources/DispatchResource/RelationManagers/ItemsRelationManager.php:56)
+  Cambios: quitar `ReplicateAction`; validar que la suma por `purchase_item_id` no supere lo pedido; recalcular `total` backend; bloquear edición libre de `price` si no procede.
+  Resultado esperado: el despacho no puede sobredespachar ni duplicar líneas accidentalmente.
+
+**Pruebas A Preparar**
+- `T1`: crear compra, agregar items, confirmar.
+- `T2`: doble submit de “Dispatch” sobre la misma compra.
+- `T3`: asignar lote sin stock suficiente.
+- `T4`: editar lote/cantidad de un `dispatch_item` y verificar compensación de stock.
+- `T5`: intentar marcar `delivered` sin dispatch completo.
+- `T6`: validar que un usuario de `admin` no vea compras de otro `team`.
+- `T7`: validar que un `Super Admin` global en `tenantManager` pueda operar sin romper invariantes.
+
+**Orden de implementación recomendado**
+1. `A1-A4`
+2. `B2-B4`
+3. `C1-C3`
+4. `D1-D3`
+5. `T1-T7`
+
+Si quieres, en el siguiente paso empiezo a ejecutar la `Iteración A` directamente en el repo.

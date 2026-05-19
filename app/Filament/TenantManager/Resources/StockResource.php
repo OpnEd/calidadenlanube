@@ -12,6 +12,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Enums\ActionsPosition;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -20,14 +21,19 @@ class StockResource extends Resource
 {
     protected static ?string $model = Stock::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Operaciones internas';
+    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationLabel = 'Inventarios';
+    protected static ?string $pluralModelLabel = 'Inventarios';
+    protected static ?string $modelLabel = 'Inventario';
+    protected static ?string $slug = 'operaciones-internas/inventarios';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\Select::make('product_id')
-                    ->label('Product')
+                    ->label('Producto')
                     ->searchable()
                     ->options(
                         Product::all()->mapWithKeys(function ($product) {
@@ -40,13 +46,13 @@ class StockResource extends Resource
                     ->createOptionForm(
                         [
                             Forms\Components\Select::make('manufacturer_id')
-                                ->label('Manufacturer')
+                                ->label('Fabricante')
                                 ->options(
                                     \App\Models\Manufacturer::all()->pluck('name', 'id')->toArray()
                                 )
                                 ->required(),
                             Forms\Components\Select::make('sanitary_registry_id')
-                                ->label('Sanitary Registry')
+                                ->label('Registro Sanitario')
                                 ->options(
                                     \App\Models\SanitaryRegistry::all()->mapWithKeys(function ($registry) {
                                         return [$registry->id => "{$registry->code} ({$registry->product_name})"];
@@ -54,25 +60,27 @@ class StockResource extends Resource
                                 )
                                 ->required(),
                             Forms\Components\DatePicker::make('manufacturing_date')
-                                ->label('Manufacturing Date')
+                                ->label('Fecha de Fabricación')
                                 ->required(),
                             Forms\Components\DatePicker::make('expiration_date')
-                                ->label('Expiration Date')
+                                ->label('Fecha de Expiración')
                                 ->required(),
                             Forms\Components\TextInput::make('code')
-                                ->label('Batch Code')
+                                ->label('Código del Lote')
                                 ->required(),
                             Forms\Components\KeyValue::make('data')
-                                ->label('Additional Data')
+                                ->label('Datos Adicionales')
                                 ->columnSpanFull()
                         ]
                     )
                     ->searchable()  // mejor UX si hay muchos lotes
                     ->required(),
                 Forms\Components\TextInput::make('quantity')
+                    ->label('Cantidad')
                     ->required()
                     ->numeric(),
                 Forms\Components\TextInput::make('purchase_price')
+                    ->label('Precio de Compra')
                     ->required()
                     ->numeric(),
             ]);
@@ -83,20 +91,26 @@ class StockResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('product.name')
+                    ->label('Producto')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('central_batch.code')
+                    ->label('Código del Lote')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('quantity')
+                    ->label('Cantidad')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('purchase_price')
+                    ->label('Precio de Compra')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Creado el')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
+                    ->label('Actualizado el')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -105,8 +119,11 @@ class StockResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\EditAction::make(),
+                ])
+            ], position: ActionsPosition::BeforeColumns)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),

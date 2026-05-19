@@ -10,6 +10,7 @@ use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Enums\ActionsPosition;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -18,8 +19,13 @@ class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
 
-    protected static ?string $navigationGroup = 'Products';
-    protected static ?string $navigationIcon = 'phosphor-cube';
+    protected static ?string $navigationGroup = 'Gestión de productos';
+    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationLabel = 'Productos';
+    protected static ?string $pluralModelLabel = 'Productos';
+    protected static ?string $modelLabel = 'Producto';
+    protected static ?string $recordTitleAttribute = 'name';
+    protected static ?string $slug = 'gestion-de-productos/productos';
 
     public static function form(Form $form): Form
     {
@@ -167,9 +173,11 @@ class ProductResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-            ])
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\EditAction::make(),
+                ]),
+            ], position: ActionsPosition::BeforeColumns)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),

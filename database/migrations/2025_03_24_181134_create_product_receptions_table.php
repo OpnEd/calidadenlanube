@@ -21,7 +21,7 @@ return new class extends Migration
             $table->foreignIdFor(User::class)->constrained();
             $table->foreignIdFor(Purchase::class)->constrained();
             $table->foreignIdFor(Invoice::class)->constrained();
-            $table->enum('status', ['in progress', 'done'])->default('in progress');
+            $table->enum('status', ['in_progress', 'done', 'rejected'])->default('done');
             $table->timestamp('reception_date')->nullable();
             $table->text('observations')->nullable();
             $table->json('data')->nullable();

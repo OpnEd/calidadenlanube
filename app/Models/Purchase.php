@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Cache;
 use Filament\Facades\Filament;
+use App\Enums\PurchaseStatus;
 
 class Purchase extends Model
 {
@@ -27,8 +28,9 @@ class Purchase extends Model
     ];
 
     protected $casts = [
-        'data' => 'json',
-        'total' => 'integer',
+        'status' => PurchaseStatus::class,
+        'total' => 'decimal:2',
+        'data' => 'array',
     ];
 
     protected static function booted()

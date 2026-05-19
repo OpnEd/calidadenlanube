@@ -26,7 +26,7 @@ class TenantManagerPanelProvider extends PanelProvider
     {
         return $panel
             ->id('tenantManager')
-            ->path('admin-console')
+            ->path('administrador')
             ->colors([
                 'primary' => Color::Green,
             ])
@@ -59,8 +59,23 @@ class TenantManagerPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->navigationGroups([
                 NavigationGroup::make()
-                     ->label('Productos')
-                     ->icon('phosphor-cube'),
+                     ->label('Operaciones externas')
+                     ->icon('phosphor-headset'),
+                NavigationGroup::make()
+                     ->label('Operaciones internas')
+                     ->icon('phosphor-arrow-square-in'),
+                NavigationGroup::make()
+                     ->label('Registros diarios')
+                     ->icon('phosphor-pen'),
+                NavigationGroup::make()
+                     ->label('Gestión de productos')
+                     ->icon('phosphor-pill'),
+                NavigationGroup::make()
+                     ->label('Capacitaciones')
+                     ->icon('phosphor-student'),
+                NavigationGroup::make()
+                     ->label('Personas y organizaciones')
+                     ->icon('phosphor-users-three'),
             ])
             ->login();
     }

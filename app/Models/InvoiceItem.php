@@ -2,16 +2,19 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\Pivot;
 
-class InvoiceItem extends Pivot
+class InvoiceItem extends Model
 {
+    protected $table = 'invoice_items';
 
     protected $fillable = [
         'invoice_id',
         'sale_item_id',
+        'dispatch_item_id',
         'batch_id',
+        'central_batch_id',
         'due_date',
         'quantity',
         'price',
@@ -20,7 +23,7 @@ class InvoiceItem extends Pivot
 
     protected $casts = [
         'quantity' => 'integer',
-        'sale_price' => 'decimal:2',
+        'price' => 'decimal:2',
         'total' => 'decimal:2',
         'due_date' => 'datetime',
     ];
@@ -30,13 +33,38 @@ class InvoiceItem extends Pivot
         return $this->belongsTo(Invoice::class);
     }
 
-    public function batchs(): BelongsTo
+    public function batch(): BelongsTo
     {
-        return $this->belongsTo(Batch::class);
+        return $this->belongsTo(Batch::class, 'batch_id');
     }
 
-    public function sale_item(): BelongsTo
+    public function batchs(): BelongsTo
     {
-        return $this->belongsTo(SaleItem::class);
+        return $this->batch();
+    }
+
+    public function centralBatch(): BelongsTo
+    {
+        return $this->belongsTo(CentralBatch::class, 'central_batch_id');
+    }
+
+    public function saleItem(): BelongsTo
+    {
+        return $this->belongsTo(SaleItem::class, 'sale_item_id');
+    }
+
+    public function saleItems(): BelongsTo
+    {
+        return $this->saleItem();
+    }
+
+    public function dispatchItem(): BelongsTo
+    {
+        return $this->belongsTo(DispatchItems::class, 'dispatch_item_id');
+    }
+
+    public function dispatchItems(): BelongsTo
+    {
+        return $this->dispatchItem();
     }
 }

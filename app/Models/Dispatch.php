@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Dispatch extends Model
@@ -23,6 +24,12 @@ class Dispatch extends Model
         'dispatched_at' => 'datetime',
         'data' => 'array',
     ];
+
+    // Relación uno a uno con factura
+    public function invoice(): HasOne
+    {
+        return $this->hasOne(Invoice::class);
+    }
 
     public function purchase(): BelongsTo
     {

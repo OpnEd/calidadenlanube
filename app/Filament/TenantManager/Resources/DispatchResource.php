@@ -5,6 +5,7 @@ namespace App\Filament\TenantManager\Resources;
 use App\Filament\TenantManager\Resources\DispatchResource\Pages;
 use App\Filament\TenantManager\Resources\DispatchResource\RelationManagers;
 use App\Models\Dispatch;
+use App\Models\Purchase;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -13,31 +14,41 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\Section;
+use Filament\Tables\Enums\ActionsPosition;
 
 class DispatchResource extends Resource
 {
     protected static ?string $model = Dispatch::class;
 
-    protected static ?string $navigationGroup = 'Transactions';
-    protected static ?string $navigationIcon = 'phosphor-check-fat';
+    protected static ?string $navigationGroup = 'Operaciones externas';
+    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationLabel = 'Despachos';
+    protected static ?string $pluralModelLabel = 'Despachos';
+    protected static ?string $modelLabel = 'Despacho';
+    protected static ?string $slug = 'operaciones-externas/despachos';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Section::make('Dispatch details')
+                Section::make('Detalles del despacho')
                     ->schema([
                         Forms\Components\Select::make('purchase_id')
-                            ->relationship('purchase', 'id')
+                            ->relationship(
+                                name: 'purchase',
+                                titleAttribute: 'code')
+                            ->getOptionLabelFromRecordUsing(fn (Purchase $record): string => "{$record->code} - " . ($record->team?->name ?? 'Sin Cliente'))
                             ->required(),
                         Forms\Components\Select::make('team_id')
-                            ->relationship('team', 'name')
+                            ->relationship(
+                                name: 'team',
+                                titleAttribute: 'name')
                             ->required(),
                         Forms\Components\DateTimePicker::make('dispatched_at'),
                     ])
                     ->columns(3)
                     ->collapsed(),
-                Section::make('Dispatch meta-data')
+                Section::make('Metadatos del despacho')
                     ->schema([
                         Forms\Components\KeyValue::make('data'),
                     ])
@@ -50,26 +61,31 @@ class DispatchResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('purchase.id')
-                    ->numeric()
+                Tables\Columns\TextColumn::make('purchase.code')
+                    ->label('Código Orden de compra')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('team.name')
+                    ->label('Cliente')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('user.name')
-                    ->label('Made by')
+                    ->label('Procesado por')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('dispatched_at')
+                    ->label('Fecha de despacho')
                     ->dateTime()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Creado el')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
+                    ->label('Actualizado el')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('deleted_at')
+                    ->label('Eliminado el')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -78,9 +94,11 @@ class DispatchResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-            ])
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\EditAction::make(),
+                ]),
+            ], position: ActionsPosition::BeforeColumns)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),

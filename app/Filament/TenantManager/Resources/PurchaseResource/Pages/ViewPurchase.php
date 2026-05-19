@@ -20,7 +20,8 @@ class ViewPurchase extends ViewRecord
     {
         return [
             Action::make('createDispatch')
-                ->label('Dispatch')
+                ->label('Despachar pedido')
+                ->icon('phosphor-truck')
                 ->visible(fn (): bool => Gate::allows('create-dispatch', $this->record))
                 ->action(function (Model $record, array $data): void {
                     // Verificar si todos los PurchaseItems están enlistados

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Purchase;
 use App\Models\Dispatch;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class DispatchService
 {
@@ -17,8 +18,9 @@ class DispatchService
      */
     public function createFromPurchase(Purchase $purchase): Dispatch
     {
+        Log::info("Iniciando creación de Dispatch para Purchase ID: {$purchase->id} (Estado: " . ($purchase->status->value ?? $purchase->status) . ")");
         // Validar que la compra esté confirmada (opcional, de acuerdo a tu lógica)
-        if ($purchase->status !== 'confirmed') {
+        if ($purchase->status->value !== 'confirmed') {
             throw new \Exception('La compra no está confirmada.');
         }
 

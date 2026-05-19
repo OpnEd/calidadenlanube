@@ -12,34 +12,60 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Traits\Operations\HasInvoiceSelect;
+use App\Enums\ProductReceptionStatus;
+use Filament\Tables\Enums\ActionsPosition;
 
 class ProductReceptionResource extends Resource
 {
+    use HasInvoiceSelect;
+
     protected static ?string $model = ProductReception::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Operaciones internas';
+    protected static ?int $navigationSort = 2;
+    protected static ?string $navigationLabel = 'Recepciones Técnicas';
+    protected static ?string $pluralModelLabel = 'Recepciones Técnicas';
+    protected static ?string $modelLabel = 'Recepción técnica';
+    protected static ?string $slug = 'operaciones-internas/recepciones-tecnicas';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('team_id')
-                    ->relationship('team', 'name')
-                    ->required(),
-                Forms\Components\Select::make('user_id')
-                    ->relationship('user', 'name')
-                    ->required(),
                 Forms\Components\Select::make('purchase_id')
-                    ->relationship('purchase', 'id')
+                    ->label('Orden de compra')
+                    ->relationship(
+                        'purchase',
+                        'code',
+                        fn (Builder $query) => $query->whereNull('team_id')
+                    )
+                    ->helperText('Selecciona la orden de compra asociada a esta recepción técnica')
                     ->required(),
-                Forms\Components\Select::make('invoice_id')
-                    ->relationship('invoice', 'id'),
-                Forms\Components\TextInput::make('status')
+
+                static::invoiceSelect(),
+
+                Forms\Components\Select::make('status')
+                    ->label('Estado de la recepción')
+                    ->options(ProductReceptionStatus::class)
                     ->required(),
-                Forms\Components\DateTimePicker::make('reception_date'),
+
+                Forms\Components\DateTimePicker::make('reception_date')
+                    ->label('Fecha de recepción')
+                    ->required()
+                    ->default(now()),
+
                 Forms\Components\Textarea::make('observations')
+                    ->label('Observaciones')
+                    ->rows(3)
                     ->columnSpanFull(),
-                Forms\Components\TextInput::make('data'),
+
+                Forms\Components\KeyValue::make('data')
+                    ->label('Datos adicionales')
+                    ->keyPlaceHolder('Color')
+                    ->valuePlaceHolder('rojo')
+                    ->helperText('Puedes agregar cualquier información adicional relevante en formato JSON, por ejemplo: "color": "rojo", "tamaño": "grande"')
+                    ->columnspanfull(),
             ]);
     }
 
@@ -47,31 +73,32 @@ class ProductReceptionResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('team.name')
-                    ->numeric()
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('user.name')
+                    ->label('Registrado por')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('purchase.code')
+                    ->label('Orden de compra')
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('purchase.id')
-                    ->numeric()
+                Tables\Columns\TextColumn::make('invoice.code')
+                    ->label('Factura')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('invoice.id')
-                    ->numeric()
+                Tables\Columns\IconColumn::make('status')
+                    ->label('Estado')
+                    ->icon(fn(ProductReceptionStatus $state) => $state->getIcon())
+                    ->tooltip(fn(ProductReceptionStatus $state) => $state->getLabel())
                     ->sortable(),
-                Tables\Columns\TextColumn::make('status'),
                 Tables\Columns\TextColumn::make('reception_date')
+                    ->label('Fecha de recepción')
                     ->dateTime()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('deleted_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Creado en')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
+                    ->label('Actualizado en')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -80,13 +107,13 @@ class ProductReceptionResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\EditAction::make(),
+                ]),
+            ], position: ActionsPosition::BeforeColumns)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
+                    // Ninguna acción masiva por ahora
                 ]),
             ]);
     }
@@ -110,6 +137,7 @@ class ProductReceptionResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->whereNull('team_id')
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

@@ -17,7 +17,13 @@ class CourseResource extends Resource
 {
     protected static ?string $model = Course::class;
 
-    protected static ?string $navigationGroup = 'Training';
+    protected static ?string $navigationGroup = 'Capacitaciones';
+    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationLabel = 'Cursos';
+    protected static ?string $pluralModelLabel = 'Cursos';
+    protected static ?string $modelLabel = 'Curso';
+    protected static ?string $recordTitleAttribute = 'title';
+    protected static ?string $slug = 'cursos';
 
     public static function form(Form $form): Form
     {

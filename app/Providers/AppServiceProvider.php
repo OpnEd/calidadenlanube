@@ -27,6 +27,11 @@ use App\Observers\AnesthesiaSheetObserver;
 use App\Observers\ProductReceptionItemObserver;
 use App\Repositories\CourseRepository;
 use App\Repositories\Interfaces\CourseInterface;
+use Filament\Notifications\Livewire\Notifications;
+use Filament\Support\Enums\Alignment;
+use Filament\Support\Enums\VerticalAlignment;
+use App\Notifications\Notification;
+use Filament\Notifications\Notification as BaseNotification;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -62,7 +67,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(CourseInterface::class, CourseRepository::class);
 
-
+        $this->app->bind(BaseNotification::class, Notification::class);
     }
 
     /**
@@ -96,5 +101,12 @@ class AppServiceProvider extends ServiceProvider
         SaleItem::observe(SaleItemObserver::class);
         AnesthesiaSheet::observe(AnesthesiaSheetObserver::class);
         ProductReceptionItem::observe(ProductReceptionItemObserver::class);
+
+        /* Notification::configureUsing(function (Notification $notification): void {
+            $notification->view('filament.notifications.notification');
+        }); */
+
+        Notifications::alignment(Alignment::Center);
+        Notifications::verticalAlignment(VerticalAlignment::Center);
     }
 }

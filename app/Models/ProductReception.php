@@ -7,14 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Enums\ProductReceptionStatus;
 
 class ProductReception extends Model
 {
     /** @use HasFactory<\Database\Factories\ProductReceptionFactory> */
     use HasFactory, SoftDeletes;
-
-    public const STATUS_IN_PROGRESS = 'in progress';
-    public const STATUS_DONE = 'done';
 
     protected $fillable = [
         'team_id',
@@ -28,14 +26,14 @@ class ProductReception extends Model
     ];
 
     protected $casts = [
-        'status' => 'string',
+        'status' => ProductReceptionStatus::class,
         'reception_date' => 'datetime',
         'data' => 'array',
     ];
 
     public function isDone(): bool
     {
-        return $this->status === self::STATUS_DONE;
+        return $this->status === ProductReceptionStatus::Completed;
     }
 
     public function invoice(): BelongsTo

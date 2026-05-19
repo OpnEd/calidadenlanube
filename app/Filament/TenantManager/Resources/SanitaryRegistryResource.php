@@ -9,6 +9,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Enums\ActionsPosition;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -17,8 +18,13 @@ class SanitaryRegistryResource extends Resource
 {
     protected static ?string $model = SanitaryRegistry::class;
 
-    protected static ?string $navigationGroup = 'Products';
-    protected static ?string $navigationIcon = 'phosphor-buildings';
+    protected static ?string $navigationGroup = 'Gestión de productos';
+    protected static ?int $navigationSort = 7;
+    protected static ?string $navigationLabel = 'Registros sanitarios';
+    protected static ?string $pluralModelLabel = 'Registros sanitarios';
+    protected static ?string $modelLabel = 'Registro sanitario';
+    protected static ?string $recordTitleAttribute = 'code';
+    protected static ?string $slug = 'gestion-de-productos/registros-sanitarios';
 
     public static function form(Form $form): Form
     {
@@ -46,26 +52,27 @@ class SanitaryRegistryResource extends Resource
                     ->label('CUM')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Creado el')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
+                    ->label('Actualizado el')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TrashedFilter::make(),
+                //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\EditAction::make(),
+                ])
+            ], position: ActionsPosition::BeforeColumns)
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
-                ]),
+                //
             ]);
     }
 

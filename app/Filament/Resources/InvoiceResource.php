@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\InvoiceResource\Pages;
 use App\Filament\Resources\InvoiceResource\RelationManagers;
 use App\Models\Invoice;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -26,28 +27,32 @@ class InvoiceResource extends Resource
             ->schema([
                 Section::make('Order details')
                     ->schema([
-                Forms\Components\Select::make('sale_id')
-                    ->relationship('sale', 'id'),
-                Forms\Components\TextInput::make('code')
-                    ->label(__('Invoice Code'))
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('amount')
-                    ->label(__('Total'))
-                    ->required()
-                    ->numeric(),
-                Forms\Components\Toggle::make('is_our')
-                    ->label(__('Is Our Invoice'))
-                    ->inline(false)
-                    ->required(),
-                Forms\Components\DatePicker::make('issued_date')
-                    ->label(__('Issued Date'))
-                    ->default(now())
-                    ->required(),
-                Forms\Components\TextInput::make('data'),
+                        Forms\Components\Select::make('sale_id')
+                            ->relationship(
+                                'sale',
+                                'id',
+                                fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant())
+                            ),
+                        Forms\Components\TextInput::make('code')
+                            ->label(__('Invoice Code'))
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('amount')
+                            ->label(__('Total'))
+                            ->required()
+                            ->numeric(),
+                        Forms\Components\Toggle::make('is_our')
+                            ->label(__('Is Our Invoice'))
+                            ->inline(false)
+                            ->required(),
+                        Forms\Components\DatePicker::make('issued_date')
+                            ->label(__('Issued Date'))
+                            ->default(now())
+                            ->required(),
+                        Forms\Components\TextInput::make('data'),
                     ])
                     ->columns(4),
-                ]);
+            ]);
     }
 
     public static function table(Table $table): Table
@@ -123,6 +128,7 @@ class InvoiceResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->whereBelongsTo(Filament::getTenant())
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

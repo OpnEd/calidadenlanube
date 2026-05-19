@@ -124,13 +124,13 @@ class PurchaseResource extends Resource
             ->actions([
                 ActionsActionGroup::make([
                     Tables\Actions\ViewAction::make()
-                        ->visible(fn(Purchase $record): bool => $record->status === 'pending')
+                        ->visible(fn(Purchase $record): bool => $record->status->value === 'pending')
                         ->color('primary'),
                     Tables\Actions\EditAction::make()
-                        ->visible(fn(Purchase $record): bool => $record->status === 'pending')
+                        ->visible(fn(Purchase $record): bool => $record->status->value === 'pending')
                         ->color('warning'),
                     Tables\Actions\DeleteAction::make()
-                        ->visible(fn(Purchase $record): bool => $record->status === 'pending'),
+                        ->visible(fn(Purchase $record): bool => $record->status->value === 'pending'),
                     Tables\Actions\Action::make('confirm')
                         ->label('Confirm')
                         ->icon('heroicon-o-check-circle')
@@ -138,7 +138,7 @@ class PurchaseResource extends Resource
                         ->visible(
                             fn(Purchase $record): bool =>
                             Gate::allows('confirm', $record)
-                                && $record->status === 'pending'
+                                && $record->status->value === 'pending'
                                 && $record->items()->count() > 0
                         )
                         ->requiresConfirmation()
@@ -155,7 +155,7 @@ class PurchaseResource extends Resource
                         ->visible(
                             fn(Purchase $record): bool =>
                             Gate::allows('receive', $record)
-                                && $record->status === 'confirmed'
+                                && $record->status->value === 'confirmed'
                                 && $record->items()->count() > 0
                         )
                         ->requiresConfirmation()
@@ -176,7 +176,7 @@ class PurchaseResource extends Resource
                         ->icon('phosphor-copy-simple')
                         ->color('warning')
                         ->tooltip('Clona esta orden de compra a una nueva recepción de producto.')
-                        ->visible(fn(Purchase $record): bool => $record->status === 'delivered')
+                        ->visible(fn(Purchase $record): bool => $record->status->value === 'delivered')
                         ->requiresConfirmation()
                         ->modalHeading('Clonar a Recepción de Producto')
                         ->modalDescription('¿Está seguro de que desea clonar esta orden de compra a una recepción de producto?')
