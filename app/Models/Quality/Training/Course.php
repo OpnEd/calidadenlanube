@@ -4,6 +4,7 @@ namespace App\Models\Quality\Training;
 
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,6 +17,7 @@ class Course extends Model
     use HasFactory;
 
     protected $fillable = [
+        'team_id',
         'title',
         'objective',
         'description',
@@ -51,12 +53,6 @@ class Course extends Model
         return $this->belongsTo(User::class, 'instructor_id');
     }
 
-    public function users()
-    {
-        return $this->belongsToMany(User::class, 'course_user')
-                    ->withPivot('status', 'progress')
-                    ->withTimestamps();
-    }
     public function modules()
     {
         return $this->hasMany(Module::class)->orderBy('order');
@@ -161,4 +157,75 @@ class Course extends Model
           ->withProgress()
           ->withStatus();
     }
+
+    // El creador (si es null, es Global)
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Team::class, 'team_id');
+    }
+
+    public function isGlobal(): bool
+    {
+        return $this->team_id === null;
+    }
+
+    public function isOwnedByTeam(?int $teamId): bool
+    {
+        return $teamId !== null && (int) $this->team_id === $teamId;
+    }
+
+    /* public function isSharedWithTeam(?int $teamId): bool
+    {
+        if (! $this->isGlobal() || $teamId === null) {
+            return false;
+        }
+
+        if ($this->relationLoaded('teams')) {
+            return $this->teams->contains('id', $teamId);
+        }
+
+        return $this->teams()->whereKey($teamId)->exists();
+    } */
+
+    public function isVisibleToTeam(?int $teamId): bool
+    {
+        //return $this->isOwnedByTeam($teamId) || $this->isSharedWithTeam($teamId);
+        return $this->isOwnedByTeam($teamId);
+    }
+
+    public function scopeOwnedByTeam(Builder $query, ?int $teamId): Builder
+    {
+        if ($teamId === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('team_id', $teamId);
+    }
+
+    public function scopeDiscoverableToTeam(Builder $query, ?int $teamId): Builder
+    {
+        if ($teamId === null) {
+            return $query->whereNull('team_id');
+        }
+
+        return $query->where(function (Builder $builder) use ($teamId) {
+            $builder->whereNull('team_id')
+                ->orWhere('team_id', $teamId);
+        });
+    }
+
+    /* public function scopeVisibleToTeam(Builder $query, ?int $teamId): Builder
+    {
+        if ($teamId === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function (Builder $builder) use ($teamId) {
+            $builder->where('team_id', $teamId)
+                ->orWhere(function (Builder $sharedQuery) use ($teamId) {
+                    $sharedQuery->whereNull('team_id')
+                        ->whereHas('teams', fn (Builder $teamQuery) => $teamQuery->whereKey($teamId));
+                });
+        });
+    } */
 }

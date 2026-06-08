@@ -1,94 +1,380 @@
 <?php
-namespace App\Services;
+
+namespace App\Services\Quality;
 
 use App\Models\Quality\Training\Assessment;
 use App\Models\Quality\Training\AssessmentAttempt;
 use App\Models\Quality\Training\Enrollment;
-use Carbon\Carbon;
+use App\Models\Quality\Training\Question;
+use App\Models\Quality\Training\UserAnswer;
 use Illuminate\Support\Facades\DB;
 
 class AssessmentService
 {
-    /**
-     * Inicia un intento (crea registro) para un assessment y enrollment.
-     */
-    public function startAttempt(Assessment $assessment, Enrollment $enrollment, $user)
+    public function __construct(
+        protected EnrollmentLessonService $enrollmentLessons
+    ) {}
+
+    public function startAttempt(Assessment $assessment, Enrollment $enrollment, $user): AssessmentAttempt
     {
-        // validar que el enrollment corresponde al course de la lesson
-        if ($assessment->lesson->module->course_id !== $enrollment->course_id) {
-            throw new \Exception("Enrollment no corresponde al curso del assessment.");
+        if ($user->id !== $enrollment->user_id) {
+            throw new \RuntimeException('El usuario no esta inscrito en esta matricula.');
         }
 
-        $attempt = AssessmentAttempt::create([
-            'assessment_id' => $assessment->id,
-            'enrollment_id' => $enrollment->id,
-            'user_id' => $user->id,
-            'answers' => null,
-            'score' => null,
-            'passed' => false,
-        ]);
+        if (! $assessment->active) {
+            throw new \RuntimeException('La evaluacion no esta activa.');
+        }
 
-        return $attempt;
-    }
+        $lesson = $assessment->lesson()->with('module')->first();
 
-    /**
-     * Corrige un intento: compara respuestas con las correctas, calcula score y marca passed si aplica.
-     * Answers format expected: ['q0' => 'option_index', ...] o similar, depende de tu JSON.
-     */
-    public function gradeAttempt(AssessmentAttempt $attempt, array $answers): AssessmentAttempt
-    {
-        $assessment = $attempt->assessment;
-        $questions = $assessment->questions ?? [];
+        if (! $lesson) {
+            throw new \RuntimeException('El assessment no esta asociado a una leccion.');
+        }
 
-        $total = count($questions);
-        $correctCount = 0;
+        if (! $lesson->module || $lesson->module->course_id !== $enrollment->course_id) {
+            throw new \RuntimeException('La matricula no corresponde al curso del assessment.');
+        }
 
-        foreach ($questions as $index => $q) {
-            // define el identificador de la pregunta en el payload
-            $key = "q{$index}";
-            $correct = $q['correct'] ?? null; // asumimos que 'correct' guarda el índice o valor
-            $given = $answers[$key] ?? null;
+        if (! $assessment->questions()->exists()) {
+            throw new \RuntimeException('La evaluacion no tiene preguntas configuradas.');
+        }
 
-            if ($given !== null) {
-                // comparación flexible: puede ser índice o valor
-                if ($given == $correct) {
-                    $correctCount++;
-                }
+        $maxAttempts = $assessment->max_attempts;
+        if ($maxAttempts !== null && $maxAttempts > 0) {
+            $attemptCount = AssessmentAttempt::query()
+                ->where('assessment_id', $assessment->id)
+                ->where('enrollment_id', $enrollment->id)
+                ->where('user_id', $user->id)
+                ->count();
+
+            if ($attemptCount >= $maxAttempts) {
+                throw new \RuntimeException(
+                    "Se ha alcanzado el limite maximo de intentos ({$maxAttempts}) para esta evaluacion."
+                );
             }
         }
 
-        $score = $total > 0 ? intval(round(($correctCount / $total) * 100)) : 0;
-        $passed = $score >= $assessment->pass_percentage;
+        return DB::transaction(function () use ($assessment, $enrollment, $lesson, $user) {
+            $enrollmentLesson = $this->enrollmentLessons->getOrCreate($enrollment, $lesson);
+            $this->enrollmentLessons->touchAccess($enrollmentLesson);
 
-        $attempt->answers = $answers;
-        $attempt->score = $score;
-        $attempt->passed = $passed;
-        if ($passed && !$attempt->passed_at) {
-            $attempt->passed_at = Carbon::now();
+            return AssessmentAttempt::create([
+                'assessment_id' => $assessment->id,
+                'enrollment_id' => $enrollment->id,
+                'lesson_id' => $lesson->id,
+                'user_id' => $user->id,
+                'status' => 'in_progress',
+                'started_at' => now(),
+                'passed' => false,
+            ]);
+        });
+    }
+
+    public function submitAttempt(AssessmentAttempt $attempt, array $answers): AssessmentAttempt
+    {
+        if ($attempt->user_id !== auth()->id()) {
+            throw new \RuntimeException('No tienes permiso para enviar esta evaluacion.');
         }
-        $attempt->save();
 
-        if ($passed) {
-            $this->markLessonPassedForEnrollment($assessment->lesson->id, $attempt->enrollment);
+        if ($attempt->status !== 'in_progress') {
+            throw new \RuntimeException('Este intento ya ha sido completado.');
         }
 
-        // actualizar progreso del enrollment
-        $attempt->enrollment->updateProgress();
+        $assessment = $attempt->assessment()->with('questions.questionOptions')->firstOrFail();
+        $normalizedAnswers = $this->normalizeAnswers($assessment, $answers);
+
+        DB::transaction(function () use ($attempt, $assessment, $normalizedAnswers) {
+            $attempt->responses = $normalizedAnswers;
+            $attempt->save();
+
+            $attempt->userAnswers()->delete();
+
+            foreach ($assessment->questions as $question) {
+                $answer = $normalizedAnswers[$question->id] ?? null;
+
+                if ($question->isMultipleChoiceMultiple()) {
+                    foreach ($answer ?? [] as $optionId) {
+                        UserAnswer::create([
+                            'user_id' => $attempt->user_id,
+                            'question_id' => $question->id,
+                            'question_option_id' => $optionId,
+                            'assessment_attempt_id' => $attempt->id,
+                        ]);
+                    }
+
+                    continue;
+                }
+
+                if ($question->isOptionBased() && is_numeric($answer)) {
+                    UserAnswer::create([
+                        'user_id' => $attempt->user_id,
+                        'question_id' => $question->id,
+                        'question_option_id' => (int) $answer,
+                        'assessment_attempt_id' => $attempt->id,
+                    ]);
+                }
+            }
+        });
 
         return $attempt->fresh();
     }
 
-    /**
-     * Marca la lección como pasada en el pivot enrollment_lesson.
-     */
-    protected function markLessonPassedForEnrollment(int $lessonId, Enrollment $enrollment)
+    public function gradeAttempt(AssessmentAttempt $attempt, ?array $answers = null): AssessmentAttempt
     {
-        $now = Carbon::now();
+        return DB::transaction(function () use ($attempt, $answers) {
+            if ($answers !== null) {
+                $attempt = $this->submitAttempt($attempt, $answers);
+            }
 
-        DB::table('enrollment_lesson')->updateOrInsert(
-            ['enrollment_id' => $enrollment->id, 'lesson_id' => $lessonId],
-            ['passed' => true, 'passed_at' => $now, 'updated_at' => $now, 'created_at' => DB::raw('COALESCE(created_at, NOW())')]
+            $assessment = $attempt->assessment()->with('questions.questionOptions', 'lesson.module')->firstOrFail();
+            $lesson = $attempt->lesson ?? $assessment->lesson;
+
+            if (! $lesson) {
+                throw new \RuntimeException('No se pudo resolver la leccion del intento.');
+            }
+
+            $summary = $this->buildAttemptSummaryFromAssessment(
+                $assessment,
+                $attempt->responses ?? [],
+                $attempt
+            );
+
+            $attempt->status = 'completed';
+            $attempt->completed_at = now();
+            $attempt->score = $summary['score'];
+            $attempt->passed = $summary['passed'];
+            $attempt->passed_at = $summary['passed'] ? now() : null;
+            $attempt->feedback = $summary['feedback'];
+            $attempt->lesson_id ??= $lesson->id;
+            $attempt->save();
+
+            if ($attempt->enrollment) {
+                $enrollmentLesson = $this->enrollmentLessons->getOrCreate($attempt->enrollment, $lesson);
+
+                if ($summary['passed']) {
+                    $this->enrollmentLessons->markPassed($enrollmentLesson, $attempt);
+                } else {
+                    $this->enrollmentLessons->markConsumed($enrollmentLesson);
+                }
+            }
+
+            return $attempt->fresh();
+        });
+    }
+
+    public function buildAttemptSummary(AssessmentAttempt $attempt): array
+    {
+        $assessment = $attempt->assessment()->with('questions.questionOptions', 'lesson.module')->firstOrFail();
+
+        return $this->buildAttemptSummaryFromAssessment(
+            $assessment,
+            $attempt->responses ?? [],
+            $attempt
         );
     }
-}
 
+    public function getRemainingAttempts(Assessment $assessment, Enrollment $enrollment, $user): ?int
+    {
+        if ($assessment->max_attempts === null || $assessment->max_attempts <= 0) {
+            return null;
+        }
+
+        $usedAttempts = AssessmentAttempt::query()
+            ->where('assessment_id', $assessment->id)
+            ->where('enrollment_id', $enrollment->id)
+            ->where('user_id', $user->id)
+            ->count();
+
+        return max(0, $assessment->max_attempts - $usedAttempts);
+    }
+
+    public function canStartAttempt(Assessment $assessment, Enrollment $enrollment, $user): array
+    {
+        if ($user->id !== $enrollment->user_id) {
+            return [false, 'El usuario no esta inscrito en esta matricula.'];
+        }
+
+        if (! $assessment->active) {
+            return [false, 'La evaluacion no esta activa.'];
+        }
+
+        if (! $assessment->lesson) {
+            return [false, 'El assessment no esta asociado a una leccion.'];
+        }
+
+        if (! $assessment->questions()->exists()) {
+            return [false, 'La evaluacion no tiene preguntas configuradas.'];
+        }
+
+        if (! $assessment->lesson->module || $assessment->lesson->module->course_id !== $enrollment->course_id) {
+            return [false, 'La matricula no corresponde al curso del assessment.'];
+        }
+
+        if ($assessment->max_attempts !== null && $assessment->max_attempts > 0) {
+            $remainingAttempts = $this->getRemainingAttempts($assessment, $enrollment, $user);
+
+            if ($remainingAttempts === 0) {
+                return [false, "Se ha alcanzado el limite maximo de intentos ({$assessment->max_attempts}) para esta evaluacion."];
+            }
+        }
+
+        return [true, null];
+    }
+
+    private function normalizeAnswers(Assessment $assessment, array $answers): array
+    {
+        $normalizedAnswers = [];
+
+        foreach ($assessment->questions as $question) {
+            $answer = $answers[$question->id] ?? null;
+
+            if ($question->isMultipleChoiceMultiple()) {
+                $optionIds = collect($answer ?? [])
+                    ->filter(fn ($value) => $value !== null && $value !== '')
+                    ->map(fn ($value) => (int) $value)
+                    ->unique()
+                    ->values();
+
+                if ($optionIds->isEmpty()) {
+                    continue;
+                }
+
+                $validOptionIds = $question->questionOptions
+                    ->pluck('id')
+                    ->map(fn ($id) => (int) $id);
+
+                if ($optionIds->diff($validOptionIds)->isNotEmpty()) {
+                    throw new \RuntimeException('Se detectaron opciones invalidas en la evaluacion.');
+                }
+
+                $normalizedAnswers[$question->id] = $optionIds->all();
+                continue;
+            }
+
+            if ($question->isOptionBased()) {
+                if ($answer === null || $answer === '') {
+                    continue;
+                }
+
+                $optionId = (int) $answer;
+                $validOptionIds = $question->questionOptions
+                    ->pluck('id')
+                    ->map(fn ($id) => (int) $id);
+
+                if (! $validOptionIds->contains($optionId)) {
+                    throw new \RuntimeException('Se detectaron opciones invalidas en la evaluacion.');
+                }
+
+                $normalizedAnswers[$question->id] = $optionId;
+                continue;
+            }
+
+            $textAnswer = trim((string) $answer);
+
+            if ($textAnswer !== '') {
+                $normalizedAnswers[$question->id] = $textAnswer;
+            }
+        }
+
+        return $normalizedAnswers;
+    }
+
+    private function buildAttemptSummaryFromAssessment(
+        Assessment $assessment,
+        array $answers,
+        ?AssessmentAttempt $attempt = null
+    ): array {
+        $questions = $assessment->questions;
+        $gradableQuestions = $questions->filter(fn (Question $question) => $question->isAutoGradable());
+
+        if ($gradableQuestions->isEmpty()) {
+            throw new \RuntimeException('La evaluacion no tiene preguntas calificables automaticamente.');
+        }
+
+        $correctAnswers = 0;
+
+        foreach ($gradableQuestions as $question) {
+            if ($this->isAnswerCorrect($question, $answers[$question->id] ?? null)) {
+                $correctAnswers++;
+            }
+        }
+
+        $maxScore = (float) ($assessment->max_score ?? 100);
+        if ($maxScore <= 0) {
+            $maxScore = 100.0;
+        }
+
+        $score = round(($correctAnswers / $gradableQuestions->count()) * $maxScore, 2);
+        $scorePercentage = round(($score / $maxScore) * 100, 2);
+        $passed = $score >= (float) ($assessment->passing_score ?? 60);
+
+        return [
+            'score' => $score,
+            'max_score' => $maxScore,
+            'score_percentage' => $scorePercentage,
+            'passed' => $passed,
+            'correct_answers' => $correctAnswers,
+            'gradable_questions' => $gradableQuestions->count(),
+            'total_questions' => $questions->count(),
+            'duration' => $attempt?->durationInMinutes(),
+            'feedback' => $assessment->show_feedback
+                ? $this->generateFeedback($scorePercentage)
+                : null,
+        ];
+    }
+
+    private function isAnswerCorrect(Question $question, mixed $answer): bool
+    {
+        if ($question->isFreeText()) {
+            return false;
+        }
+
+        if ($answer === null || $answer === '' || $answer === []) {
+            return false;
+        }
+
+        if ($question->isMultipleChoiceSingle() || $question->isTrueFalse()) {
+            $correctOptionId = $question->questionOptions
+                ->firstWhere('is_correct', true)
+                ?->id;
+
+            return $correctOptionId !== null && (int) $answer === (int) $correctOptionId;
+        }
+
+        if ($question->isMultipleChoiceMultiple()) {
+            $correctOptionIds = $question->questionOptions
+                ->where('is_correct', true)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->sort()
+                ->values();
+
+            $selectedOptionIds = collect($answer)
+                ->map(fn ($id) => (int) $id)
+                ->sort()
+                ->values();
+
+            return $correctOptionIds->isNotEmpty()
+                && $correctOptionIds->all() === $selectedOptionIds->all();
+        }
+
+        return false;
+    }
+
+    private function generateFeedback(float $scorePercentage): string
+    {
+        if ($scorePercentage >= 90) {
+            return 'Excelente desempeno. Demostraste dominio del tema.';
+        }
+
+        if ($scorePercentage >= 80) {
+            return 'Buen trabajo. Aun asi vale la pena repasar algunos puntos.';
+        }
+
+        if ($scorePercentage >= 70) {
+            return 'Vas bien, pero conviene reforzar algunos conceptos clave.';
+        }
+
+        return 'Necesitas reforzar el contenido antes de intentarlo de nuevo.';
+    }
+}

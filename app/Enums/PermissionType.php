@@ -46,6 +46,14 @@ enum PermissionType: string implements HasLabel
     case RESTORE_CUSTOMER      = 'restore-customer';
     case FORCE_DELETE_CUSTOMER = 'force-delete-customer';
 
+        // Courses
+    case VIEW_COURSE         = 'view-course';
+    case CREATE_COURSE       = 'create-course';
+    case EDIT_COURSE         = 'edit-course';
+    case DELETE_COURSE       = 'delete-course';
+    case RESTORE_COURSE      = 'restore-course';
+    case FORCE_DELETE_COURSE = 'force-delete-course';
+
         // Dispatch
     case VIEW_DISPATCH         = 'view-dispatch';
     case CREATE_DISPATCH       = 'create-dispatch';
@@ -121,6 +129,22 @@ enum PermissionType: string implements HasLabel
         // Kardex
     case VIEW_KARDEX         = 'view-kardex';
     case CREATE_KARDEX       = 'create-kardex';
+
+        // Lessons
+    case VIEW_LESSONS         = 'view-lessons';
+    case CREATE_LESSONS       = 'create-lessons';
+    case EDIT_LESSONS         = 'edit-lessons';
+    case DELETE_LESSONS       = 'delete-lessons';
+    case RESTORE_LESSONS      = 'restore-lessons';
+    case FORCE_DELETE_LESSONS = 'force-delete-lessons';
+
+        // Modules
+    case VIEW_MODULES         = 'view-modules';
+    case CREATE_MODULES       = 'create-modules';
+    case EDIT_MODULES         = 'edit-modules';
+    case DELETE_MODULES       = 'delete-modules';
+    case RESTORE_MODULES      = 'restore-modules';
+    case FORCE_DELETE_MODULES = 'force-delete-modules';
 
         // Manufacturer
     case VIEW_MANUFACTURER         = 'view-manufacturer';
@@ -375,6 +399,14 @@ enum PermissionType: string implements HasLabel
             self::RESTORE_CUSTOMER      => 'Restarurar Clientes',
             self::FORCE_DELETE_CUSTOMER => 'Forzar la eliminación de Clientes',
 
+            // Courses
+            self::VIEW_COURSE         => 'Ver Cursos',
+            self::CREATE_COURSE       => 'Crear Cursos',
+            self::EDIT_COURSE         => 'Editar Cursos',
+            self::DELETE_COURSE       => 'Eliminar Cursos',
+            self::RESTORE_COURSE      => 'Restaurar Cursos',
+            self::FORCE_DELETE_COURSE => 'Forzar la eliminación de Cursos',
+
             // Dispatch
             self::VIEW_DISPATCH         => 'Ver Despachos',
             self::CREATE_DISPATCH       => 'Crear Despachos',
@@ -450,6 +482,22 @@ enum PermissionType: string implements HasLabel
             // kardex
             self::VIEW_KARDEX         => 'Ver Kardex',
             self::CREATE_KARDEX       => 'Crear Kardex',
+
+            // Lessons
+            self::VIEW_LESSONS         => 'Ver Lecciones',
+            self::CREATE_LESSONS       => 'Crear Lecciones',
+            self::EDIT_LESSONS         => 'Editar Lecciones',
+            self::DELETE_LESSONS       => 'Eliminar Lecciones',
+            self::RESTORE_LESSONS      => 'Restaurar Lecciones',
+            self::FORCE_DELETE_LESSONS => 'Forzar la eliminación de Lecciones',
+
+            // Modules
+            self::VIEW_MODULES         => 'Ver Módulos',
+            self::CREATE_MODULES       => 'Crear Módulos',
+            self::EDIT_MODULES         => 'Editar Módulos',
+            self::DELETE_MODULES       => 'Eliminar Módulos',
+            self::RESTORE_MODULES      => 'Restaurar Módulos',
+            self::FORCE_DELETE_MODULES => 'Forzar la eliminación de Módulos',
 
             // Manufacturer
             self::VIEW_MANUFACTURER         => 'Ver Fabricantes',

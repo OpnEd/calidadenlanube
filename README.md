@@ -66,12 +66,10 @@ A continuación se presenta el esquema detallado de la documentación funcional 
 *   **Gestión de Clientes:** Base de datos de pacientes/clientes con historial de compras.
 
 ### C. Capacitación y Calidad (LMS)
-*   **Plataforma de E-Learning:** Módulo para la capacitación continua del personal en protocolos y manejo de medicamentos.
-*   **Estructura de Cursos:** Organización en Módulos y Lecciones.
-*   **Evaluaciones Automatizadas:**
-    *   Cuestionarios de opción múltiple y falso/verdadero.
-    *   Calificación automática y retroalimentación inmediata.
-    *   Registro de intentos y certificación de aprobación.
+El módulo de capacitación (LMS) se divide en dos áreas de trabajo principales:
+*   **Módulo de Participación (`app/Filament/Resources/Quality/Training`):** A través de este, los usuarios se inscriben en los diferentes cursos, toman las lecciones, realizan las evaluaciones y la lección y/o el curso se marca como "tomado", emitiendo una certificación al finalizar.
+*   **Módulo de Administración (`app/Filament/TenantManager/Resources/Training`):** A través de este, un administrador crea y gestiona los cursos, las lecciones y las evaluaciones (assessments).
+*   **Evaluaciones Automatizadas:** Cuestionarios de opción múltiple y falso/verdadero con calificación automática, retroalimentación inmediata y registro de intentos.
 
 ### D. Gestión Clínica
 *   **Hojas de Anestesia:** Digitalización del consumo de anestésicos en quirófano.

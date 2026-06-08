@@ -25,7 +25,7 @@ class CourseList extends Component
         $this->teamId = Filament::getTenant()->id;
         $this->training = $training;
         // Inyectamos el servicio y obtenemos los cursos
-        $this->courses = $this->training->listAvailableCourses();
+        $this->courses = $this->training->listAvailableCourses($this->teamId);
         $this->userEnrollments = Enrollment::where('user_id', Auth::user()->id)->where('team_id', $this->teamId)->get()->keyBy('course_id');
         //dd($this->courses);
     }

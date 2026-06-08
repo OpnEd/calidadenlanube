@@ -3,28 +3,30 @@
 namespace App\Filament\Resources\Quality\Training;
 
 use App\Filament\Resources\Quality\Training\EnrollmentResource\Pages;
-use App\Models\Quality\Training\Enrollment;
-use Filament\Facades\Filament;
-use Filament\Forms;
+use App\Filament\Resources\Quality\Training\EnrollmentResource\RelationManagers;
+use App\Traits\Filament\Training\HasEnrollmentFormAndTable;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Table;
+use App\Models\Quality\Training\Enrollment;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Builder;
 
 class EnrollmentResource extends Resource
 {
+    use HasEnrollmentFormAndTable;
+
     protected static ?string $model = Enrollment::class;
 
     protected static ?string $navigationGroup = 'Universidad';
     protected static ?string $navigationLabel = 'Matrículas';
+
     protected static ?string $modelLabel = 'Matrícula';
+
     protected static ?string $pluralModelLabel = 'Matrículas';
-    
-    public static function shouldRegisterNavigation(): bool
-    {
-        return false;
-    }
+
+    protected static ?int $navigationSort = 2;
 
     public static function getNavigationBadge(): ?string
     {
@@ -52,91 +54,12 @@ class EnrollmentResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('team_id')
-                    ->numeric(),
-                Forms\Components\Select::make('user_id')
-                    ->relationship('user', 'name')
-                    ->required(),
-                Forms\Components\Select::make('course_id')
-                    ->relationship('course', 'title')
-                    ->required(),
-                Forms\Components\TextInput::make('status')
-                    ->required()
-                    ->maxLength(255)
-                    ->default('in_progress'),
-                Forms\Components\TextInput::make('progress')
-                    ->required()
-                    ->numeric()
-                    ->default(0),
-                Forms\Components\DateTimePicker::make('started_at'),
-                Forms\Components\DateTimePicker::make('completed_at'),
-                Forms\Components\DateTimePicker::make('last_accessed_at'),
-                Forms\Components\DateTimePicker::make('certificated_at'),
-                Forms\Components\TextInput::make('certificate_url')
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('score_final')
-                    ->numeric(),
-            ]);
+        return static::buildEnrollmentForm($form);
     }
 
     public static function table(Table $table): Table
     {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('user.name')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('course.title')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('status')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('progress')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('started_at')
-                    ->dateTime()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('completed_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('last_accessed_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('certificated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('certificate_url')
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('score_final')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->filters([
-                //
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+        return static::buildEnrollmentTable($table);
     }
 
 
@@ -155,7 +78,23 @@ class EnrollmentResource extends Resource
             'create' => Pages\CreateEnrollment::route('/create'),
             'edit' => Pages\EditEnrollment::route('/{record}/edit'),
             'view' => Pages\CourseOverview::route('/{record}'),
-            'lesson' => Pages\Lessonview::route('/{record}/lesson')
+            'lesson' => Pages\Lessonview::route('/{record}/lessons/{lesson}')
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $tenantId = Filament::getTenant()?->id;
+        $user = Auth::user();
+
+        $query = parent::getEloquentQuery()
+            ->with(['user', 'course'])
+            ->where('team_id', $tenantId);
+
+        if ($user && ! ($user->isAdmin() || $user->isInstructor())) {
+            $query->where('user_id', $user->id);
+        }
+
+        return $query;
     }
 }

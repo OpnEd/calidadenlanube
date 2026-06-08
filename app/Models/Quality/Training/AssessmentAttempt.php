@@ -14,14 +14,17 @@ class AssessmentAttempt extends Model
     use HasFactory;
 
     protected $fillable = [
-        'assessment_id',    // Relación con la evaluación
-        'user_id',          // Relación con el usuario que intenta
-        'score',            // Puntaje obtenido
-        'status',           // Estado: in_progress, completed, etc.
-        'started_at',       // Fecha/hora de inicio del intento
-        'completed_at',     // Fecha/hora de finalización
-        'responses',        // Respuestas dadas (puede ser JSON)
-        'passed',           // Indica si el intento fue aprobado
+        'assessment_id',
+        'enrollment_id',
+        'lesson_id',
+        'user_id',
+        'score',
+        'status',
+        'started_at',
+        'completed_at',
+        'responses',
+        'passed',
+        'passed_at',
         'feedback',
     ];
 
@@ -31,6 +34,7 @@ class AssessmentAttempt extends Model
         'completed_at' => 'datetime',
         'responses' => 'array',
         'passed' => 'boolean',
+        'passed_at' => 'datetime',
     ];
 
     public function assessment(): BelongsTo
@@ -38,7 +42,17 @@ class AssessmentAttempt extends Model
         return $this->belongsTo(Assessment::class);
     }
 
-    public function user()
+    public function enrollment(): BelongsTo
+    {
+        return $this->belongsTo(Enrollment::class);
+    }
+
+    public function lesson(): BelongsTo
+    {
+        return $this->belongsTo(Lesson::class);
+    }
+
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
@@ -48,27 +62,22 @@ class AssessmentAttempt extends Model
         return $this->hasMany(UserAnswer::class);
     }
 
-    /**
-     * Verifica si el intento está completado.
-     */
     public function isCompleted(): bool
     {
         return $this->status === 'completed';
     }
 
-    /**
-     * Duración del intento en minutos.
-     */
     public function durationInMinutes(): ?int
     {
         if ($this->started_at && $this->completed_at) {
             return $this->started_at->diffInMinutes($this->completed_at);
         }
+
         return null;
     }
 
     public function isPassed(): bool
     {
-        return $this->score >= $this->assessment->passing_score;
+        return (bool) ($this->passed ?? false);
     }
 }

@@ -13,11 +13,11 @@ class Module extends Model
     use HasFactory;
 
     protected $fillable = [
+        'course_id',
         'title',
         'objective',
         'description',
         'duration', // Duration in minutes
-        'course_id',
         'order',
         'image',
         'active',
@@ -56,5 +56,9 @@ class Module extends Model
         return sprintf('%02d:%02d', $hours, $minutes);
     }
 
+    public function team()
+    {
+        return $this->belongsTo(\App\Models\Team::class);
+    }
     
 }

@@ -37,7 +37,16 @@ trait HasTeamAuthorization
     ): bool {
         $team = Filament::getTenant();
 
-        if (!$team || $model->team_id !== $team->id) {
+        if (!$team) {
+            return false;
+        }
+
+        // Verify ownership: Support both direct team_id column and Many-to-Many User relationship
+        $isOwnedByTeam = isset($model->team_id) 
+            ? $model->team_id === $team->id 
+            : ($model instanceof \App\Models\User && $model->teams()->where('teams.id', $team->id)->exists());
+
+        if (!$isOwnedByTeam) {
             return false;
         }
 

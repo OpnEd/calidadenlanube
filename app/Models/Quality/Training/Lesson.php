@@ -5,6 +5,7 @@ namespace App\Models\Quality\Training;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Lesson extends Model
@@ -12,23 +13,36 @@ class Lesson extends Model
     /** @use HasFactory<\Database\Factories\Quality\Training\LessonFactory> */
     use HasFactory;
 
+    public const COMPLETION_MODE_CONSUMPTION_ONLY = 'consumption_only';
+    public const COMPLETION_MODE_ASSESSMENT_REQUIRED = 'assessment_required';
+
     protected $fillable = [
-        'title',
-        'objective',
-        'description',
+        'module_id',//
+        'title',//
         'duration', // Duration in minutes
-        'module_id',
-        'order',
-        'content',
-        'video_url',
-        'iframe',
-        'active',
+        'order',//
+        'video_url',//
+        'iframe',//
+        'description',//
+        'ilustrations',//
+        'objectives',//
+        'introduction',//
+        'content',//
+        'conclusions',//
+        'references',//
+        'completion_mode',//
+        'active',//
     ];
 
     protected $casts = [
         'active' => 'boolean',
         'duration' => 'integer',
         'content' => 'array',
+        'completion_mode' => 'string',
+        'objectives' => 'array',
+        'ilustrations' => 'array',
+        'references' => 'array',
+        'conclusions' => 'array',
     ];
 
     /* public function getVideoUrlAttribute()
@@ -44,16 +58,9 @@ class Lesson extends Model
         return $this->hasOne(Assessment::class);
     }
 
-    public function enrollments()
+    public function enrollmentLessons(): HasMany
     {
-        // pivot enrollment_lesson
-        return $this->belongsToMany(Enrollment::class, 'enrollment_lesson')
-            ->withPivot([
-                'started_at',
-                'completed_at',
-                'last_accessed_at',
-            ])
-            ->withTimestamps();
+        return $this->hasMany(EnrollmentLesson::class);
     }
     public function getIsActiveAttribute()
     {
@@ -123,6 +130,16 @@ class Lesson extends Model
         return !empty($this->video_url);
     }
 
+    public function requiresAssessment(): bool
+    {
+        return ($this->completion_mode ?? self::COMPLETION_MODE_ASSESSMENT_REQUIRED) === self::COMPLETION_MODE_ASSESSMENT_REQUIRED;
+    }
+
+    public function isConsumptionOnly(): bool
+    {
+        return ! $this->requiresAssessment();
+    }
+
     /**
      * Relación con las finalizaciones de lección por usuario.
      */
@@ -138,5 +155,4 @@ class Lesson extends Model
     {
         return $this->completions()->firstOrCreate(['user_id' => $user->id]);
     }
-
 }

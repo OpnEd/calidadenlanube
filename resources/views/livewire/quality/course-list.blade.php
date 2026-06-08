@@ -1,15 +1,16 @@
 <div class="space-y-6">
-                            @php
-                                // seguridad: comprobar que userEnrollments es Collection
-                                $hasEnrollments = $userEnrollments instanceof \Illuminate\Support\Collection;
-                                $enrollment = $hasEnrollments ? $userEnrollments->get($course->id) : null;
-                                // Si $enrollment es el modelo, sacamos su id; si userEnrollments fue pluck, get() puede devolver id directamente
-                                $enrollmentId = $enrollment?->id ?? $enrollment;
-                            @endphp
-                        
+    @php
+        // Esta comprobación se puede hacer una sola vez fuera del bucle
+        $hasEnrollments = $userEnrollments instanceof \Illuminate\Support\Collection;
+    @endphp
+
     {{-- Cuadrícula de cursos --}}
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         @forelse ($courses as $course)
+            @php
+                $enrollment = $hasEnrollments ? $userEnrollments->get($course->id) : null;
+                $enrollmentId = $enrollment?->id ?? $enrollment;
+            @endphp
             {{-- Tarjeta de curso individual --}}
             <div
                 class="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-800 dark:ring-white/10">

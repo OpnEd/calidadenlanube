@@ -1,5 +1,7 @@
 <?php
 
+namespace App\Services;
+
 use App\Models\AnesthesiaSheetItem;
 use App\Models\Inventory;
 use App\Models\KardexEntry;

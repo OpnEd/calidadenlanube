@@ -216,6 +216,16 @@ class User extends Authenticatable implements FilamentUser, HasTenants, HasAvata
     {
         return $this->hasMany(UserAnswer::class);
     }
+
+    public function isInstructor(): bool
+    {
+        return $this->hasRole('Instructor');
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
+    }
 }
 
 /* $teamId = session('team_id'); // ⚠️ Este es el valor que se usa para filtrar roles
