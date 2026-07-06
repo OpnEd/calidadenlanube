@@ -61,7 +61,7 @@ class LessonResource extends Resource
             'index' => Pages\ListLessons::route('/'),
             'create' => Pages\CreateLesson::route('/create'),
             'edit' => Pages\EditLesson::route('/{record}/edit'),
-            'view' => Pages\ViewLesson::route('/{record}'),
+            'view' => Pages\LessonView::route('/{record}'),
         ];
     }
 

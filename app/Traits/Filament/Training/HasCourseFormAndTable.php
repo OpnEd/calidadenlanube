@@ -145,12 +145,14 @@ trait HasCourseFormAndTable
                 Tables\Columns\TextColumn::make('instructor.name')
                     ->label('Instructor')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('category')
                     ->label('Categoría')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('level')
                     ->label('Nivel')
@@ -161,17 +163,8 @@ trait HasCourseFormAndTable
                         'expert' => 'Experto',
                         default => $state,
                     })
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('type')
-                    ->label('Tipo')
-                    ->formatStateUsing(fn($state) => match ($state) {
-                        'synchronous' => 'Sincrónico',
-                        'asynchronous' => 'Asincrónico',
-                        'hybrid' => 'Híbrido',
-                        default => $state,
-                    })
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('duration')
                     ->label('Duración')
@@ -181,17 +174,13 @@ trait HasCourseFormAndTable
 
                 Tables\Columns\TextColumn::make('price')
                     ->label('Precio')
-                    ->money('USD')
-                    ->sortable(),
+                    ->money('COP')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\IconColumn::make('active')
                     ->label('Activo')
                     ->boolean()
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('enrollments_count')
-                    ->label('Inscritos')
-                    ->counts('enrollments')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('type')
@@ -217,14 +206,6 @@ trait HasCourseFormAndTable
                         'intermediate' => 'Intermedio',
                         'advanced' => 'Avanzado',
                         'expert' => 'Experto',
-                    ]),
-
-                Tables\Filters\SelectFilter::make('type')
-                    ->label('Tipo')
-                    ->options([
-                        'synchronous' => 'Sincrónico',
-                        'asynchronous' => 'Asincrónico',
-                        'hybrid' => 'Híbrido',
                     ]),
 
                 Tables\Filters\TernaryFilter::make('active')
@@ -259,29 +240,13 @@ trait HasCourseFormAndTable
                             ])
                         ),
 
-                    Tables\Actions\EditAction::make()
-                        ->visible(fn($record) => $record->team_id !== null),
-
-                    Tables\Actions\DeleteAction::make()
-                        ->visible(fn($record) => $record->team_id !== null),
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
                     Tables\Actions\ViewAction::make(),
                 ])
             ], position: ActionsPosition::BeforeColumns)
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('activate')
-                        ->label('Activar')
-                        ->icon('heroicon-m-check')
-                        ->action(function (Collection $records) {
-                            $records->each(fn(Course $record) => $record->update(['active' => true]));
-                        }),
-                    Tables\Actions\BulkAction::make('deactivate')
-                        ->label('Desactivar')
-                        ->icon('heroicon-m-x-mark')
-                        ->action(function (Collection $records) {
-                            $records->each(fn(Course $record) => $record->update(['active' => false]));
-                        }),
-                ]),
+                //
             ])
             ->defaultSort('created_at', 'desc');
     }

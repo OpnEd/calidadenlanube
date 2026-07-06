@@ -16,7 +16,7 @@ class LessonResource extends Resource
 
     protected static ?string $model = Lesson::class;
 
-    protected static ?string $navigationGroup = 'Training';
+    protected static ?string $navigationGroup = 'Capacitación';
 
     public static function form(Form $form): Form
     {

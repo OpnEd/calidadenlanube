@@ -80,7 +80,7 @@ class LessonsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('active', true))
+            ->modifyQueryUsing(fn(Builder $query): Builder => $query->where('active', true))
             ->recordTitleAttribute('title')
             ->columns([
                 Tables\Columns\TextColumn::make('order')
@@ -95,7 +95,7 @@ class LessonsRelationManager extends RelationManager
 
                 Tables\Columns\TextColumn::make('duration')
                     ->label('Duración')
-                    ->formatStateUsing(fn ($state) => $state ? "{$state} min" : '-')
+                    ->formatStateUsing(fn($state) => $state ? "{$state} min" : '-')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('completion_mode')
@@ -105,7 +105,7 @@ class LessonsRelationManager extends RelationManager
                         'info' => 'consumption_only',
                         'warning' => 'assessment_required',
                     ])
-                    ->formatStateUsing(fn ($state) => match ($state) {
+                    ->formatStateUsing(fn($state) => match ($state) {
                         'consumption_only' => 'Consumo',
                         'assessment_required' => 'Evaluación',
                         default => $state,
@@ -131,20 +131,17 @@ class LessonsRelationManager extends RelationManager
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
-                Action::make('view')
-                    ->label('Ver')
-                    ->icon('heroicon-o-eye')
-                    ->url(fn (Lesson $record) => LessonResource::getUrl('view', ['record' => $record]))
-                    ->openUrlInNewTab(),
+                    Action::make('view')
+                        ->label('Ver')
+                        ->icon('heroicon-o-eye')
+                        ->url(fn(Lesson $record) => LessonResource::getUrl('view', ['record' => $record]))
+                        ->openUrlInNewTab(),
                     Tables\Actions\EditAction::make(),
                     Tables\Actions\DeleteAction::make(),
                 ])
             ], position: ActionsPosition::BeforeColumns)
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
-                        ->visible(fn (): bool => $this->ownerRecord->course?->team_id === Filament::getTenant()?->id),
-                ]),
+                //
             ])
             ->defaultSort('order');
     }

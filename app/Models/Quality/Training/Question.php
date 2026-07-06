@@ -19,7 +19,6 @@ class Question extends Model
     public const TYPE_FREE_TEXT = 'free_text';
 
     protected $fillable = [
-        'team_id',
         'assessment_id',
         'question_text',
         'type',
@@ -43,11 +42,6 @@ class Question extends Model
     public function userAnswers(): HasMany
     {
         return $this->hasMany(UserAnswer::class);
-    }
-
-    public function team(): BelongsTo
-    {
-        return $this->belongsTo(Team::class);
     }
 
     public function isRequired(): bool

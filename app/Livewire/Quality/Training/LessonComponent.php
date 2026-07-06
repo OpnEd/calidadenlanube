@@ -3,6 +3,7 @@
 namespace App\Livewire\Quality\Training;
 
 use App\Filament\Resources\Quality\Training\EnrollmentResource;
+use App\Filament\Resources\Quality\Training\LessonResource;
 use App\Helpers\Training\BreadcrumbHelper;
 use App\Models\Quality\Training\Assessment;
 use App\Models\Quality\Training\AssessmentAttempt;
@@ -15,9 +16,11 @@ use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\On;
 use Livewire\Component;
+use Illuminate\Support\Facades\Log;
 
 class LessonComponent extends Component
 {
+    //public ?Enrollment $enrollment = null;
     public Enrollment $enrollment;
 
     public Lesson $lesson;
@@ -54,12 +57,12 @@ class LessonComponent extends Component
             'course.modules.lessons',
             'enrollmentLessons',
         ]);
-
         $this->lesson = $lesson->load([
             'module.course',
             'assessment.questions.questionOptions',
-        ]);
-
+            ]);
+            
+            //dd($this->lesson);
         abort_unless($this->lesson->module?->course_id === $this->enrollment->course_id, 404);
 
         $this->updateNavigationState();
@@ -195,6 +198,13 @@ class LessonComponent extends Component
         return ['text' => 'No cursada', 'color' => 'gray'];
     }
 
+    /**
+     * This method, loadAssessmentData(), acts as the initialization and 
+     * validation phase for a user who is about to take an assessment within 
+     * a lesson. Its primary job is to gather all necessary data about the 
+     * user's progress and determine whether they are allowed to start the 
+     * evaluation.
+     */
     protected function loadAssessmentData(): void
     {
         $this->assessment = $this->lesson->assessment;
@@ -240,10 +250,16 @@ class LessonComponent extends Component
             $this->enrollment,
             auth()->user()
         );
+
+        
     }
 
     protected function getOrderedLessons(): Collection
     {
+        /* if (! $this->enrollment?->course) {
+            return collect();
+        }
+        dd($this->enrollment->course->modules); */
         return $this->enrollment->course->modules
             ->sortBy('order')
             ->flatMap(fn($module) => $module->lessons->sortBy('order')->values())

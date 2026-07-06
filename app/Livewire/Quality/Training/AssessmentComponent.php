@@ -28,7 +28,16 @@ class AssessmentComponent extends Component
 
     public ?int $remainingAttempts = null;
 
-    protected AssessmentService $assessmentService;
+    protected ?AssessmentService $assessmentService = null;
+
+    private function assessmentService(): AssessmentService
+    {
+        if (! $this->assessmentService) {
+            $this->assessmentService = app(AssessmentService::class);
+        }
+
+        return $this->assessmentService;
+    }
 
     public function mount(Assessment $assessment, Enrollment $enrollment): void
     {
@@ -43,7 +52,7 @@ class AssessmentComponent extends Component
     public function startAttempt(): void
     {
         try {
-            $this->currentAttempt = $this->assessmentService->startAttempt(
+            $this->currentAttempt = $this->assessmentService()->startAttempt(
                 assessment: $this->assessment,
                 enrollment: $this->enrollment,
                 user: auth()->user(),
@@ -100,13 +109,13 @@ class AssessmentComponent extends Component
                 return;
             }
 
-            $this->currentAttempt = $this->assessmentService->submitAttempt(
+            $this->currentAttempt = $this->assessmentService()->submitAttempt(
                 attempt: $this->currentAttempt,
                 answers: $this->userAnswers,
             );
 
-            $this->currentAttempt = $this->assessmentService->gradeAttempt($this->currentAttempt);
-            $this->results = $this->assessmentService->buildAttemptSummary($this->currentAttempt);
+            $this->currentAttempt = $this->assessmentService()->gradeAttempt($this->currentAttempt);
+            $this->results = $this->assessmentService()->buildAttemptSummary($this->currentAttempt);
             $this->showResults = true;
             $this->syncRemainingAttempts();
 
@@ -170,7 +179,7 @@ class AssessmentComponent extends Component
 
     private function syncRemainingAttempts(): void
     {
-        $this->remainingAttempts = $this->assessmentService->getRemainingAttempts(
+        $this->remainingAttempts = $this->assessmentService()->getRemainingAttempts(
             $this->assessment,
             $this->enrollment,
             auth()->user(),

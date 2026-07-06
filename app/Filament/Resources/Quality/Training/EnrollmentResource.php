@@ -26,6 +26,8 @@ class EnrollmentResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Matrículas';
 
+    protected static ?string $slug = 'capacitacion/matriculas';
+
     protected static ?int $navigationSort = 2;
 
     public static function getNavigationBadge(): ?string
@@ -78,7 +80,7 @@ class EnrollmentResource extends Resource
             'create' => Pages\CreateEnrollment::route('/create'),
             'edit' => Pages\EditEnrollment::route('/{record}/edit'),
             'view' => Pages\CourseOverview::route('/{record}'),
-            'lesson' => Pages\Lessonview::route('/{record}/lessons/{lesson}')
+            'lesson' => Pages\LessonView::route('/{record}/lessons/{lesson}')
         ];
     }
 

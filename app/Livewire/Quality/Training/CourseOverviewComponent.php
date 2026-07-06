@@ -20,10 +20,11 @@ class CourseOverviewComponent extends Component
     {
         $this->record = $record->load([
             'course.modules.lessons.assessment:id,lesson_id,title',
-        ]);
-        $this->course = $this->record->course;
-        $this->team = filament()->getTenant();
-        $this->loadLessonStatuses();
+            ]);
+            $this->course = $this->record->course;
+            $this->team = filament()->getTenant();
+            $this->loadLessonStatuses();
+            //dd($this->record, $this->course, $this->team, $this->lessonStatuses);
     }
 
     protected function loadLessonStatuses(): void

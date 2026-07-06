@@ -25,5 +25,6 @@ class CourseOverview extends ViewRecord
     {
         $this->record = $this->resolveRecord($record);
         $this->record->loadMissing('course');
+        //dd($this->record, $this->record->course);
     }
 }

@@ -71,8 +71,8 @@ class TenantManagerPanelProvider extends PanelProvider
                      ->label('Gestión de productos')
                      ->icon('phosphor-pill'),
                 NavigationGroup::make()
-                     ->label('Capacitaciones')
-                     ->icon('phosphor-student'),
+                     ->label('Capacitación')
+                     ->icon('heroicon-o-clipboard-document-check'),
                 NavigationGroup::make()
                      ->label('Personas y organizaciones')
                      ->icon('phosphor-users-three'),

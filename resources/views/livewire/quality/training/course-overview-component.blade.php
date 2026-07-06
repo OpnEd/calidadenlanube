@@ -37,9 +37,9 @@
                         @foreach ($module->lessons as $lesson)
                             <li class="flex items-center justify-between gap-x-3">
                                 @if ($lesson->active)
-                                    <x-filament::link :href="route('filament.admin.resources.quality.training.lessons.view', [
-                                        'tenant' => $team->id,
-                                        'record' => $lesson->id,
+                                    <x-filament::link :href="\App\Filament\Resources\Quality\Training\EnrollmentResource::getUrl('lesson', [
+                                        'record' => $record->getKey(),
+                                        'lesson' => $lesson->id,
                                     ])" target="_blank" rel="noopener noreferrer"
                                         icon="heroicon-o-document-text">
                                         {{ $lesson->title }}

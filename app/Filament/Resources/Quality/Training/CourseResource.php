@@ -19,6 +19,7 @@ class CourseResource extends Resource
 
     protected static ?string $model = Course::class;
 
+    protected static ?string $navigationGroup = 'Universidad';
     // Desactivamos el scope automático para poder incluir los cursos globales (null)
     protected static bool $isScopedToTenant = false;
 
@@ -29,7 +30,10 @@ class CourseResource extends Resource
     protected static ?string $pluralModelLabel = 'Cursos';
 
     protected static ?int $navigationSort = 1;
-    protected static ?string $navigationGroup = 'Universidad';
+    protected static ?string $recordTitleAttribute = 'title';
+    protected static ?string $slug = 'capacitacion/cursos';
+
+
 
     public static function getEloquentQuery(): Builder
     {

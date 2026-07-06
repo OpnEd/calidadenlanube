@@ -79,27 +79,23 @@ class ModulesRelationManager extends RelationManager
                     ->label('Activo'),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
-                //->visible(fn (): bool => $this->ownerRecord->team_id === Filament::getTenant()?->id),
+                Tables\Actions\CreateAction::make(),
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
+
                     Action::make('view')
                         ->label('Ver')
                         ->icon('heroicon-o-eye')
                         ->url(fn(Module $record) => ModuleResource::getUrl('view', ['record' => $record]))
                         ->openUrlInNewTab(),
                     Tables\Actions\EditAction::make(),
-                    //->visible(fn (): bool => $this->ownerRecord->team_id === Filament::getTenant()?->id),
                     Tables\Actions\DeleteAction::make(),
-                    //->visible(fn (): bool => $this->ownerRecord->team_id === Filament::getTenant()?->id),
+
                 ])
             ], position: ActionsPosition::BeforeColumns)
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
-                        ->visible(fn(): bool => $this->ownerRecord->team_id === Filament::getTenant()?->id),
-                ]),
+                //
             ])
             ->defaultSort('order');
     }

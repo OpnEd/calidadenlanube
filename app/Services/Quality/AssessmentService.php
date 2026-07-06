@@ -35,6 +35,15 @@ class AssessmentService
             throw new \RuntimeException('La matricula no corresponde al curso del assessment.');
         }
 
+        if ($assessment->attempts()
+            ->where('enrollment_id', $enrollment->id)
+            ->where('user_id', $user->id)
+            ->where('passed', true)
+            ->exists()
+        ) {
+            throw new \RuntimeException('La evaluación ya fue aprobada.');
+        }
+
         if (! $assessment->questions()->exists()) {
             throw new \RuntimeException('La evaluacion no tiene preguntas configuradas.');
         }
@@ -200,6 +209,15 @@ class AssessmentService
 
         if (! $assessment->lesson) {
             return [false, 'El assessment no esta asociado a una leccion.'];
+        }
+
+        if ($assessment->attempts()
+            ->where('enrollment_id', $enrollment->id)
+            ->where('user_id', $user->id)
+            ->where('passed', true)
+            ->exists()
+        ) {
+            return [false, 'La evaluación ya fue aprobada.'];
         }
 
         if (! $assessment->questions()->exists()) {

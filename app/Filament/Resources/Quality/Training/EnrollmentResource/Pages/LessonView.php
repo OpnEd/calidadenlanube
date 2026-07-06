@@ -1,33 +1,42 @@
 <?php
 
-namespace App\Filament\Resources\Quality\Training\LessonResource\Pages;
+namespace App\Filament\Resources\Quality\Training\EnrollmentResource\Pages;
 
 use App\Filament\Resources\Quality\Training\EnrollmentResource;
-use App\Filament\Resources\Quality\Training\LessonResource;
 use App\Models\Quality\Training\Enrollment;
 use App\Filament\Resources\Quality\Training\ModuleResource;
 use App\Filament\Resources\Quality\Training\CourseResource;
-use App\Models\Quality\Training\Lesson;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Filament\Actions\Action;
-use Filament\Actions as Actions;
+use App\Models\Quality\Training\Lesson;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Support\Facades\Auth;
+use Filament\Actions;
 
 class LessonView extends ViewRecord
 {
     use InteractsWithRecord;
 
-    protected static string $resource = LessonResource::class;
+    protected static string $resource = EnrollmentResource::class;
 
     protected static string $view = 'filament.pages.quality.lesson-view';
 
-    public ?Enrollment $enrollment = null;
+    public Enrollment $enrollment;
 
     public Lesson $lesson;
-    
+
+    public function mount(int | string $record): void
+    {
+        $this->enrollment = $this->resolveRecord($record);
+        abort_unless($this->enrollment, 404, 'Matrícula no encontrada');
+
+        $this->record = $this->enrollment;
+        $this->record->loadMissing('course');
+        $this->authorizeEnrollmentAccess($this->enrollment);
+        $this->lesson = $this->resolveLesson();
+    }
+
     public function getTitle(): string
     {
         return 'Lección: ' . $this->lesson->title ?? 'Leccion';
@@ -37,74 +46,60 @@ class LessonView extends ViewRecord
     {
         $actions = [];
 
-        $enrollment = $this->resolveEnrollment();
-        //dd($enrollment);
+        /* $enrollment = $this->resolveEnrollment();
+        
         if ($enrollment) {
-            $assessment = $this->record->assessment;
+            $assessment = $this->lesson->assessment;
 
             if ($assessment) {
                 $actions[] = Action::make('realizar-assessment')
-                    ->label('Presentar evaluacion')
+                    ->label('Presentar evaluación')
                     ->icon('heroicon-o-academic-cap')
                     ->color('warning')
                     ->url(fn (): string => EnrollmentResource::getUrl('lesson', [
                         'record' => $enrollment->getKey(),
-                        'lesson' => $this->record->getKey(),
+                        'lesson' => $this->lesson->getKey(),
                     ]));
             } else {
                 $actions[] = Action::make('no-assessment')
-                    ->label('No hay assessment para esta leccion')
+                    ->label('No hay evaluación para esta leccion')
                     ->disabled();
             }
         } else {
             $actions[] = Action::make('no-enrolled')
-                ->label('Debe inscribirse para realizar la evaluacion')
+                ->label('Debe inscribirse para realizar la evaluación')
                 ->disabled();
-        }
+        } */
 
         // Navigation and edit actions
+        $module = $this->lesson->module ?? null;
+        $course = $module?->course ?? null;
+
         $actions[] = Actions\Action::make('backToModule')
-            ->label('Volver al módulo')
-            ->icon('heroicon-o-arrow-left')
+            ->label('Módulo')
+            ->icon('phosphor-rewind-circle')
             ->color('success')
-            ->url(fn () => ModuleResource::getUrl('view', ['record' => $this->record->module->id]));
+            ->url(fn () => ModuleResource::getUrl('view', ['record' => $module?->id]))
+            ->disabled(! $module?->id);
 
         $actions[] = Actions\Action::make('backToCourse')
-            ->label('Volver al curso')
-            ->icon('heroicon-o-arrow-left')
+            ->label('Curso')
+            ->icon('phosphor-rewind-circle')
             ->color('info')
-            ->url(fn () => CourseResource::getUrl('view', ['record' => $this->record->module->course->id]));
+            ->url(fn () => CourseResource::getUrl('view', ['record' => $course?->id]))
+            ->disabled(! $course?->id);
 
         $actions[] = Actions\EditAction::make();
 
         return $actions;
     }
 
-    public function mount(int | string $record): void
-    {
-        $this->record = $this->resolveRecord($record);
-        $enrollment = $this->resolveEnrollment();
-        $this->enrollment = $enrollment;
-
-        $user = auth()->user();
-        $userId = $user?->id;
-        $courseId = $this->record->module?->course_id;
-        $tenantId = Filament::getTenant()?->id;
-        
-        if (! $enrollment) {
-            abort(404, 'Matricula no encontrada');
-        }
-
-        $this->authorizeEnrollmentAccess($enrollment);
-        $this->lesson = $this->resolveLesson();
-    }
-
     protected function resolveEnrollment(): ?Enrollment
     {
         $user = auth()->user();
-        $courseId = $this->record->module?->course_id;
+        $courseId = $this->record->course_id;
         $tenantId = Filament::getTenant()?->id;
-        //dd($user, $courseId, $tenantId);
+        //dd($this->record);
 
         if (! $user || ! $courseId || ! $tenantId) {
             return null;
@@ -150,8 +145,21 @@ class LessonView extends ViewRecord
 
     protected function resolveLesson(): Lesson
     {
-        $this->record->loadMissing(['module.course', 'assessment.questions.questionOptions']);
+        $lessonParameter = request()->route('lesson');
+        $lessonId = $lessonParameter instanceof Lesson
+            ? $lessonParameter->getKey()
+            : (is_array($lessonParameter)
+                ? ($lessonParameter['id'] ?? $lessonParameter['lesson'] ?? null)
+                : $lessonParameter);
 
-        return $this->record;
+        abort_unless(is_string($lessonId) || is_int($lessonId), 404);
+
+        $lesson = Lesson::query()
+            ->with(['module.course', 'assessment.questions.questionOptions'])
+            ->findOrFail($lessonId);
+
+        abort_unless($lesson->module?->course_id === $this->record->course_id, 403);
+
+        return $lesson;
     }
 }
