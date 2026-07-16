@@ -14,8 +14,8 @@ class ViewCourse extends ViewRecord
     {
         return [
             Actions\Action::make('backToIndex')
-                ->label('Volver a la lista de cursos')
-                ->icon('heroicon-o-arrow-left')
+                ->label('Lista de cursos')
+                ->icon('phosphor-rewind-circle')
                 ->url(fn () => static::$resource::getUrl('index')),
             Actions\EditAction::make(),
         ];

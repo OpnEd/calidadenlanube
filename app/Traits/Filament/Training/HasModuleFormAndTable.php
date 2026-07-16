@@ -11,6 +11,13 @@ use Filament\Tables;
 use Filament\Tables\Enums\ActionsPosition;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\Split;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\Grid;
+use Filament\Infolists\Components\Group;
+use Filament\Infolists\Components\IconEntry;
+use Filament\Infolists\Components\ImageEntry;
 
 trait HasModuleFormAndTable
 {
@@ -168,59 +175,77 @@ trait HasModuleFormAndTable
     {
         return $infolist
             ->schema([
-                Components\Split::make([
-                    Components\Grid::make(1)
-                        ->schema([
-                            Components\Section::make('Detalles del Contenido')
-                                ->schema([
-                                    Components\TextEntry::make('title')
-                                        ->label('Título del Módulo')
-                                        ->size(Components\TextEntry\TextEntrySize::Large)
-                                        ->weight('bold'),
+                Grid::make(['default' => 1, 'lg' => 3])
+                    ->schema([
 
-                                    Components\TextEntry::make('objective')
-                                        ->label('Objetivo de Aprendizaje')
-                                        ->markdown(),
-
-                                    Components\TextEntry::make('description')
-                                        ->label('Descripción Detallada')
-                                        ->markdown(),
-                                ]),
-                        ])->columnSpan(2),
-
-                    Components\Group::make([
-                        Components\Section::make()
+                        // MAIN CONTENT AREA (Spans 2 columns on large screens)
+                        Group::make()
                             ->schema([
-                                Components\ImageEntry::make('image')
-                                    ->hiddenLabel()
-                                    ->disk('public')
-                                    ->height(180)
-                                    ->width('100%')
-                                    ->extraImgAttributes([
-                                        'class' => 'rounded-xl object-cover w-full shadow-sm',
+                                Section::make()
+                                    ->schema([
+                                        TextEntry::make('title')
+                                            ->hiddenLabel()
+                                            ->size(TextEntry\TextEntrySize::Large)
+                                            ->weight('bold')
+                                            ->color('primary')
+                                            // Makes the title act like a true H1 header
+                                            ->extraAttributes(['class' => 'text-2xl md:text-3xl tracking-tight']),
+
+                                        TextEntry::make('objective')
+                                            ->label('Objetivo de Aprendizaje')
+                                            ->icon('heroicon-o-sparkles')
+                                            ->iconColor('warning')
+                                            ->markdown()
+                                            ->prose(), // Formats the markdown beautifully like an article
+
+                                        TextEntry::make('description')
+                                            ->label('Descripción Detallada')
+                                            ->icon('heroicon-o-book-open')
+                                            ->markdown()
+                                            ->prose(),
                                     ]),
+                            ])
+                            ->columnSpan(['default' => 1, 'lg' => 2]),
 
-                                Components\TextEntry::make('course.title')
-                                    ->label('Curso')
-                                    ->icon('heroicon-m-academic-cap')
-                                    ->color('primary')
-                                    ->weight('semibold'),
+                        // SIDEBAR / METADATA (Spans 1 column on large screens)
+                        Group::make()
+                            ->schema([
+                                Section::make('Detalles')
+                                    ->icon('heroicon-o-information-circle')
+                                    ->schema([
+                                        ImageEntry::make('image')
+                                            ->hiddenLabel()
+                                            ->disk('public')
+                                            ->height(180)
+                                            ->extraImgAttributes([
+                                                'class' => 'rounded-xl object-cover w-full shadow-sm',
+                                            ]),
 
-                                Components\TextEntry::make('order')
-                                    ->label('Orden en la secuencia')
-                                    ->icon('heroicon-m-hashtag'),
+                                        TextEntry::make('course.title')
+                                            ->label('Curso')
+                                            ->icon('heroicon-m-academic-cap')
+                                            ->badge() // Badges make categorization instantly scannable
+                                            ->color('info')
+                                            ->tooltip(fn ($state) => $state),
 
-                                Components\TextEntry::make('duration')
-                                    ->label('Duración')
-                                    ->formatStateUsing(fn($state) => $state ? gmdate('H:i', $state * 60) . ' h' : '-')
-                                    ->icon('heroicon-m-clock'),
+                                        Grid::make(2)
+                                            ->schema([
+                                                TextEntry::make('duration')
+                                                    ->label('Duración')
+                                                    ->formatStateUsing(fn($state) => "{$state} min")
+                                                    ->icon('heroicon-m-clock')
+                                                    ->color('gray'),
 
-                                Components\IconEntry::make('active')
-                                    ->label('Módulo activo')
-                                    ->boolean(),
-                            ]),
-                    ])->columnSpan(1)->grow(false),
-                ])->from('lg'),
-            ])->columns(1);
+                                                TextEntry::make('order')
+                                                    ->label('Módulo N°')
+                                                    ->icon('heroicon-m-list-bullet')
+                                                    ->badge()
+                                                    ->color('success'),
+                                            ]),
+                                    ]),
+                            ])
+                            ->columnSpan(['default' => 1, 'lg' => 1]),
+                    ]),
+            ]);
     }
 }

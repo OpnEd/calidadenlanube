@@ -89,7 +89,8 @@ class LessonView extends ViewRecord
             ->url(fn () => CourseResource::getUrl('view', ['record' => $course?->id]))
             ->disabled(! $course?->id);
 
-        $actions[] = Actions\EditAction::make();
+        $actions[] = Actions\EditAction::make()
+            ->hidden(fn () => ! auth()->user()?->can('update', $this->record));
 
         return $actions;
     }

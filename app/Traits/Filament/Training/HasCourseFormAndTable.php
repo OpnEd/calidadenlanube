@@ -19,6 +19,11 @@ use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\Split;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\Grid;
+use Filament\Infolists\Components\Group;
+use Filament\Infolists\Components\IconEntry;
+use Filament\Infolists\Components\ImageEntry;
+use Filament\Infolists\Components\TextEntry\TextEntrySize;
+use Filament\Support\Enums\FontWeight;
 
 trait HasCourseFormAndTable
 {
@@ -121,9 +126,10 @@ trait HasCourseFormAndTable
                     ->label('Imagen')
                     ->circular()
                     ->disk('public')
-                    ->getStateUsing(fn ($record) => $record->image 
-                        ? (str_starts_with($record->image, 'course_images/') ? $record->image : "course_images/{$record->image}") 
-                        : null
+                    ->getStateUsing(
+                        fn($record) => $record->image
+                            ? (str_starts_with($record->image, 'course_images/') ? $record->image : "course_images/{$record->image}")
+                            : null
                     ),
 
                 Tables\Columns\TextColumn::make('title')
@@ -255,96 +261,133 @@ trait HasCourseFormAndTable
     {
         return $infolist
             ->schema([
-                Split::make([
-                    Grid::make(1)
-                        ->schema([
-                            Section::make('Resumen del Curso')
-                                ->schema([
-                                    TextEntry::make('title')
-                                        ->label('Título')
-                                        ->size(Components\TextEntry\TextEntrySize::Large)
-                                        ->weight('bold'),
+                Grid::make(['default' => 1, 'lg' => 3])
+                    ->schema([
 
-                                    TextEntry::make('objective')
-                                        ->label('Objetivo Principal')
-                                        ->markdown(),
-
-                                    TextEntry::make('description')
-                                        ->label('Descripción Detallada')
-                                        ->markdown(),
-                                ]),
-                        ])->columnSpan(2),
-
-                    Components\Group::make([
-                        Components\Section::make()
+                        // COLUMNA PRINCIPAL: Contenido Académico (Ocupa 2 columnas en pantallas grandes)
+                        Group::make()
                             ->schema([
-                                Components\ImageEntry::make('image')
-                                    ->hiddenLabel()
-                                    ->disk('public')
-                                    ->height(200)
-                                    ->width('100%')
-                                    ->extraImgAttributes([
-                                        'class' => 'rounded-lg object-cover w-full',
-                                    ]),
-
-                                Components\TextEntry::make('instructor.name')
-                                    ->label('Instructor')
-                                    ->icon('heroicon-m-user'),
-
-                                Components\Grid::make(2)
+                                Section::make()
                                     ->schema([
-                                        Components\TextEntry::make('duration')
-                                            ->label('Duración')
-                                            ->suffix(' horas'),
+                                        TextEntry::make('title')
+                                            ->hiddenLabel()
+                                            ->size(TextEntrySize::Large)
+                                            ->weight(FontWeight::Bold)
+                                            ->color('primary')
+                                            // Transforma el título en un verdadero encabezado H1 con clases Tailwind
+                                            ->extraAttributes(['class' => 'text-2xl md:text-3xl tracking-tight']),
 
-                                        Components\TextEntry::make('level')
-                                            ->label('Nivel')
-                                            ->formatStateUsing(fn($state) => match ($state) {
-                                                'beginner' => 'Principiante',
-                                                'intermediate' => 'Intermedio',
-                                                'advanced' => 'Avanzado',
-                                                'expert' => 'Experto',
-                                                default => $state,
-                                            })
+                                        TextEntry::make('objective')
+                                            ->label('Objetivo Principal')
+                                            ->icon('heroicon-o-trophy')
+                                            ->iconColor('warning')
+                                            ->markdown()
+                                            ->prose(), // Aplica espaciado tipográfico elegante a listas y textos
+
+                                        TextEntry::make('description')
+                                            ->label('Descripción Detallada')
+                                            ->icon('heroicon-o-document-text')
+                                            ->iconColor('primary')
+                                            ->markdown()
+                                            ->prose(),
+                                    ]),
+                            ])
+                            ->columnSpan(['default' => 1, 'lg' => 2]),
+
+                        // BARRA LATERAL: Metadatos e Información Comercial (Ocupa 1 columna)
+                        Group::make()
+                            ->schema([
+                                Section::make('Ficha Técnica')
+                                    ->icon('heroicon-o-information-circle')
+                                    ->schema([
+                                        ImageEntry::make('image')
+                                            ->hiddenLabel()
+                                            ->disk('public')
+                                            ->height(180)
+                                            ->extraImgAttributes([
+                                                'class' => 'rounded-xl object-cover w-full shadow-sm mb-2',
+                                            ]),
+
+                                        TextEntry::make('instructor.name')
+                                            ->label('Instructor')
+                                            ->icon('heroicon-o-user-circle')
+                                            ->weight(FontWeight::Medium),
+
+                                        Grid::make(2)
+                                            ->schema([
+                                                TextEntry::make('duration')
+                                                    ->label('Duración')
+                                                    ->icon('heroicon-o-clock')
+                                                    ->suffix(' horas'),
+
+                                                TextEntry::make('level')
+                                                    ->label('Nivel')
+                                                    ->badge()
+                                                    // Semántica de colores según la complejidad del nivel
+                                                    ->color(fn(string $state): string => match ($state) {
+                                                        'beginner' => 'success',
+                                                        'intermediate' => 'warning',
+                                                        'advanced', 'expert' => 'danger',
+                                                        default => 'gray',
+                                                    })
+                                                    ->formatStateUsing(fn($state) => match ($state) {
+                                                        'beginner' => 'Principiante',
+                                                        'intermediate' => 'Intermedio',
+                                                        'advanced' => 'Avanzado',
+                                                        'expert' => 'Experto',
+                                                        default => $state,
+                                                    }),
+                                            ]),
+
+                                        Grid::make(2)
+                                            ->schema([
+                                                TextEntry::make('type')
+                                                    ->label('Modalidad')
+                                                    ->icon('heroicon-o-computer-desktop')
+                                                    ->badge()
+                                                    ->color('gray')
+                                                    ->formatStateUsing(fn($state) => match ($state) {
+                                                        'synchronous' => 'Sincrónico',
+                                                        'asynchronous' => 'Asincrónico',
+                                                        'hybrid' => 'Híbrido',
+                                                        default => $state,
+                                                    }),
+
+                                                TextEntry::make('price')
+                                                    ->label('Inversión')
+                                                    ->money('USD')
+                                                    ->weight(FontWeight::Bold)
+                                                    ->color('primary'),
+                                            ]),
+
+                                        TextEntry::make('enrollments_count')
+                                            ->label('Estudiantes Inscritos')
+                                            ->icon('heroicon-o-users')
                                             ->badge()
                                             ->color('info'),
                                     ]),
 
-                                Components\TextEntry::make('type')
-                                    ->label('Modalidad')
-                                    ->formatStateUsing(fn($state) => match ($state) {
-                                        'synchronous' => 'Sincrónico',
-                                        'asynchronous' => 'Asincrónico',
-                                        'hybrid' => 'Híbrido',
-                                        default => $state,
-                                    }),
+                                // Sección compacta de control administrativo/SaaS
+                                Section::make('Configuración y Visibilidad')
+                                    ->icon('heroicon-o-cog-6-tooth')
+                                    ->compact()
+                                    ->schema([
+                                        Grid::make(2)
+                                            ->schema([
+                                                IconEntry::make('active')
+                                                    ->label('Estado')
+                                                    ->boolean(),
 
-                                Components\TextEntry::make('price')
-                                    ->label('Inversión')
-                                    ->money('USD'),
-
-                                Components\TextEntry::make('enrollments_count')
-                                    ->label('Estudiantes inscritos')
-                                    ->badge()
-                                    ->color('success'),
-                            ]),
-
-                        Components\Section::make('Estado y Origen')
-                            ->schema([
-                                Components\IconEntry::make('active')
-                                    ->label('Estado de visibilidad')
-                                    ->boolean(),
-
-                                Components\TextEntry::make('team_id')
-                                    ->label('Tipo de Recurso')
-                                    ->getStateUsing(fn($record) => $record->team_id === null ? 'Global' : 'Propio')
-                                    ->badge()
-                                    ->color(fn($state) => $state === 'Global' ? 'success' : 'info'),
-                            ]),
-                    ])
-                    ->columnSpan(1)
-                    ->grow(false),
-                ])->from('lg'),
-            ])->columns(1);
+                                                TextEntry::make('team_id')
+                                                    ->label('Ámbito')
+                                                    ->getStateUsing(fn($record) => $record->team_id === null ? 'Global' : 'Propio')
+                                                    ->badge()
+                                                    ->color(fn($state) => $state === 'Global' ? 'success' : 'info'),
+                                            ]),
+                                    ]),
+                            ])
+                            ->columnSpan(['default' => 1, 'lg' => 1]),
+                    ]),
+            ]);
     }
 }

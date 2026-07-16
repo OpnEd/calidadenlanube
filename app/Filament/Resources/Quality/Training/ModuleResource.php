@@ -25,7 +25,9 @@ class ModuleResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Módulos';
 
-    protected static ?int $navigationSort = 20;
+    protected static ?string $recordTitleAttribute = 'title';
+
+    protected static ?string $slug = 'capacitacion/cursos/modulos';
 
     public static function shouldRegisterNavigation(): bool
     {

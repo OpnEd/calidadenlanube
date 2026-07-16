@@ -80,7 +80,7 @@ class EnrollmentResource extends Resource
             'create' => Pages\CreateEnrollment::route('/create'),
             'edit' => Pages\EditEnrollment::route('/{record}/edit'),
             'view' => Pages\CourseOverview::route('/{record}'),
-            'lesson' => Pages\LessonView::route('/{record}/lessons/{lesson}')
+            'lesson' => Pages\LessonView::route('/{record}/leccion/{lesson}')
         ];
     }
 

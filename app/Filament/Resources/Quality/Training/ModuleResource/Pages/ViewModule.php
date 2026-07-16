@@ -15,8 +15,8 @@ class ViewModule extends ViewRecord
     {
         return [
             Actions\Action::make('backToCourse')
-                ->label('Volver al curso')
-                ->icon('heroicon-o-arrow-left')
+                ->label('Curso padre')
+                ->icon('phosphor-rewind-circle')
                 ->url(fn () => CourseResource::getUrl('view', ['record' => $this->record->course->id])),
             Actions\EditAction::make(),
         ];
@@ -24,6 +24,6 @@ class ViewModule extends ViewRecord
 
     public function getTitle(): string
     {
-        return 'Detalles del módulo';
+        return 'Descripción del módulo';
     }
 }

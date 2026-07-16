@@ -10,6 +10,7 @@ use App\Http\Controllers\RoleSeederController;
 use App\Livewire\CustomerAutoRegister;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\File;
 
 /**
  * Descargar, imprimir y enviar por correo electrónico facturas
@@ -28,27 +29,30 @@ use Illuminate\Support\Facades\Route;
             ->name('product-receptions.download');
 /*     }); */
 
-Route::redirect('/', '/admin/login');
+Route::redirect('/', '/usuarios/login');
+/*Route::get('/create-symlink', function () {
+    // 1. Get the absolute server path of your public_html folder
+    $publicHtmlPath = $_SERVER['DOCUMENT_ROOT']; 
+    
+    // 2. Go up one level from public_html to target the 'mce' directory
+    $backendStoragePublic = dirname($publicHtmlPath) . '/mce/storage/app/public';
+    $frontendStorageLink  = $publicHtmlPath . '/storage';
 
-Route::get('/debug-session', function () {
-    echo '<pre>';
-    print_r(session()->all());
-    echo '</pre>';
-});
+    if (symlink($backendStoragePublic, $frontendStorageLink)) {
+        return "Symlink created successfully using absolute paths!<br>From: {$frontendStorageLink} <br>To: {$backendStoragePublic}";
+    } else {
+        return "Failed to create symlink.";
+    }
+});*/
 
-Route::get('/clear-session', function () {
-    session()->flush();
-    return 'Sesión vaciada';
-});
-
-Route::get('/clear-artisan', function () {
+/*Route::get('/clear-artisan', function () {
     Artisan::call('optimize:clear');
     Artisan::call('config:clear');
     Artisan::call('cache:clear');
     Artisan::call('view:clear');
     Artisan::call('route:clear');
     return 'Comandos Artisan ejecutados: optimize:clear, config:clear, cache:clear';
-});
+});*/
 
 // Rutas para registro de nuevos clientes en la clínica
 Route::get('/cliente/qr/autoregistro', [QrCodeController::class, 'showBarcode'])->name('customer.barcode');

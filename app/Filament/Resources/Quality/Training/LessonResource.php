@@ -28,6 +28,10 @@ class LessonResource extends Resource
 
     protected static ?int $navigationSort = 30;
 
+    protected static ?string $recordTitleAttribute = 'title';
+
+    protected static ?string $slug = 'capacitacion/cursos/modulos/lecciones';
+
     public static function shouldRegisterNavigation(): bool
     {
         return false;
@@ -61,7 +65,7 @@ class LessonResource extends Resource
             'index' => Pages\ListLessons::route('/'),
             'create' => Pages\CreateLesson::route('/create'),
             'edit' => Pages\EditLesson::route('/{record}/edit'),
-            'view' => Pages\LessonView::route('/{record}'),
+            'view' => Pages\ViewLesson::route('/{record}'),
         ];
     }
 

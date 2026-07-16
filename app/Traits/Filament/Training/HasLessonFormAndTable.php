@@ -15,6 +15,14 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Infolists\Components\Grid;
+use Filament\Infolists\Components\Group;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\IconEntry;
+use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Support\Enums\FontWeight;
+use Filament\Infolists\Components\TextEntry\TextEntrySize;
 
 trait HasLessonFormAndTable
 {
@@ -187,11 +195,11 @@ trait HasLessonFormAndTable
                     ->boolean(),
             ])
             ->actions([
-                    Tables\Actions\ActionGroup::make([
-                        Tables\Actions\ViewAction::make(),
-                        Tables\Actions\EditAction::make(),
-                        Tables\Actions\DeleteAction::make(),
-                    ]),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                ]),
             ], position: ActionsPosition::BeforeColumns)
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -204,52 +212,105 @@ trait HasLessonFormAndTable
     public static function buildLessonInfolist(Infolist $infolist): Infolist
     {
         return $infolist
-            ->columns(2)
             ->schema([
-                Components\Section::make('Resumen de la Lección')
-                    ->description('Información básica y objetivos de aprendizaje.')
+                Grid::make(['default' => 1, 'lg' => 3])
                     ->schema([
-                        Components\TextEntry::make('title')
-                            ->label('Título')
-                            ->weight('bold')
-                            ->size(Components\TextEntry\TextEntrySize::Large)
-                            ->columnSpanFull(),
 
-                        Components\TextEntry::make('description')
-                            ->label('Descripción')
-                            ->markdown()
-                            ->columnSpanFull(),
-
-                        Components\RepeatableEntry::make('objectives')
-                            ->label('Objetivos de Aprendizaje')
+                        // COLUMNA PRINCIPAL: Contenido Didáctico e Instructivo (Ocupa 2/3)
+                        Group::make()
                             ->schema([
-                                Components\TextEntry::make('')
-                                    ->icon('heroicon-m-check')
+                                Section::make()
+                                    ->schema([
+                                        TextEntry::make('title')
+                                            ->hiddenLabel()
+                                            ->size(TextEntrySize::Large)
+                                            ->weight(FontWeight::Bold)
+                                            ->color('primary')
+                                            // Estiliza el título principal como cabecera limpia de la lección
+                                            ->extraAttributes(['class' => 'text-2xl md:text-3xl tracking-tight mb-2']),
+
+                                        TextEntry::make('description')
+                                            ->label('Sinopsis de la Lección')
+                                            ->icon('heroicon-o-document-text')
+                                            ->iconColor('gray')
+                                            ->markdown()
+                                            ->prose(), // Renderiza listas y texto enriquecido con formato profesional
+                                    ]),
+
+                                Section::make('Objetivos de Aprendizaje')
+                                    ->description('Competencias que el estudiante adquirirá al finalizar esta lección.')
+                                    ->icon('heroicon-o-check-circle')
+                                    ->iconColor('success')
+                                    ->schema([
+                                        RepeatableEntry::make('objectives')
+                                            ->hiddenLabel()
+                                            ->schema([
+                                                TextEntry::make('text') // Ajustar al nombre de tu columna (ej: 'text', 'description')
+                                                    ->hiddenLabel()
+                                                    ->icon('heroicon-m-check')
+                                                    ->iconColor('success')
+                                                    ->weight(FontWeight::Medium),
+                                            ])
+                                            ->grid(1) // Despliega los objetivos en una sola lista limpia
+                                            ->placeholder('No se han definido objetivos específicos para esta lección.')
+                                            ->extraAttributes(['class' => 'filament-infolists-clean-repeatable']),
+                                    ])
+                                    ->collapsible(),
                             ])
-                            ->columnSpanFull(),
+                            ->columnSpan(['default' => 1, 'lg' => 2]),
 
-                        Components\TextEntry::make('duration')
-                            ->label('Duración estimada')
-                            ->suffix(' minutos')
-                            ->icon('heroicon-m-clock'),
+                        // BARRA LATERAL: Métricas, Requisitos y Estado (Ocupa 1/3)
+                        Group::make()
+                            ->schema([
+                                Section::make('Reglas de la Lección')
+                                    ->icon('heroicon-o-academic-cap')
+                                    ->schema([
+                                        TextEntry::make('completion_mode')
+                                            ->label('Método de Aprobación')
+                                            ->badge()
+                                            ->color(fn($state): string => match ($state) {
+                                                Lesson::COMPLETION_MODE_ASSESSMENT_REQUIRED => 'warning',
+                                                Lesson::COMPLETION_MODE_CONSUMPTION_ONLY => 'success',
+                                                default => 'gray',
+                                            })
+                                            ->formatStateUsing(fn($state) => match ($state) {
+                                                Lesson::COMPLETION_MODE_CONSUMPTION_ONLY => 'Solo Lectura / Consumo',
+                                                Lesson::COMPLETION_MODE_ASSESSMENT_REQUIRED => 'Evaluación Obligatoria',
+                                                default => $state,
+                                            })
+                                            ->tooltip('Condición requerida para marcar la lección como completada'),
 
-                        Components\TextEntry::make('order')
-                            ->label('Posición en el módulo')
-                            ->icon('heroicon-m-hashtag'),
+                                        Grid::make(2)
+                                            ->schema([
+                                                TextEntry::make('duration')
+                                                    ->label('Tiempo Estimado')
+                                                    ->icon('heroicon-o-clock')
+                                                    ->formatStateUsing(fn($state) => "{$state} min"),
 
-                        Components\IconEntry::make('active')
-                            ->label('Estado de publicación')
-                            ->boolean(),
+                                                TextEntry::make('order')
+                                                    ->label('Índice / Posición')
+                                                    ->icon('heroicon-o-bars-3-center-left')
+                                                    ->badge()
+                                                    ->color('gray')
+                                                    ->formatStateUsing(fn($state) => "Lección #{$state}"),
+                                            ]),
+                                    ]),
 
-                        Components\TextEntry::make('completion_mode')
-                            ->label('Modo de Finalización')
-                            ->badge()
-                            ->formatStateUsing(fn($state) => match ($state) {
-                                Lesson::COMPLETION_MODE_CONSUMPTION_ONLY => 'Solo consumo',
-                                Lesson::COMPLETION_MODE_ASSESSMENT_REQUIRED => 'Requiere evaluación',
-                                default => $state,
-                            }),
-                    ])
+                                Section::make('Control de Publicación')
+                                    ->icon('heroicon-o-bolt')
+                                    ->compact()
+                                    ->schema([
+                                        Grid::make(1)
+                                            ->schema([
+                                                IconEntry::make('active')
+                                                    ->label('Visible para Estudiantes')
+                                                    ->boolean()
+                                                    ->inlineLabel(),
+                                            ]),
+                                    ]),
+                            ])
+                            ->columnSpan(['default' => 1, 'lg' => 1]),
+                    ]),
             ]);
     }
 }
