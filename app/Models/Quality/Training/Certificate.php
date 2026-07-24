@@ -120,7 +120,7 @@ class Certificate extends Model
     /**
      * Marca el certificado como emitido
      */
-    public function markAsIssued(string $pdfPath = null): self
+    public function markAsIssued(string $pdfPath): self
     {
         $this->update([
             'status' => 'issued',
@@ -134,7 +134,7 @@ class Certificate extends Model
     /**
      * Revoca el certificado
      */
-    public function revoke(string $reason = null): self
+    public function revoke(string $reason): self
     {
         $this->update([
             'status' => 'revoked',

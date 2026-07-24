@@ -11,6 +11,7 @@ use Filament\Actions;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Support\Facades\Auth;
+use Filament\Notifications\Notification;
 
 class ViewLesson extends ViewRecord
 {
@@ -20,8 +21,7 @@ class ViewLesson extends ViewRecord
     {
         $enrollment = $this->resolveEnrollment();
 
-        return [
-
+        $actions = [
             Actions\Action::make('backToModule')
                 ->label('Módulo')
                 ->icon('phosphor-rewind-circle')
@@ -33,21 +33,54 @@ class ViewLesson extends ViewRecord
                 ->icon('phosphor-rewind-circle')
                 ->color('info')
                 ->url(fn () => CourseResource::getUrl('view', ['record' => $this->record->module->course->id])),
+        ];
 
-            Actions\Action::make('takeLesson')
+        if ($enrollment) {
+            $actions[] = Actions\Action::make('takeLesson')
                 ->label('Tomar lección')
                 ->icon('heroicon-o-academic-cap')
                 ->color('warning')
-                ->url(fn (): ?string => $enrollment
-                    ? EnrollmentResource::getUrl('lesson', [
+                ->url(fn (): ?string => EnrollmentResource::getUrl('lesson', [
                         'record' => $enrollment->getKey(),
                         'lesson' => $this->record->getKey(),
-                    ])
-                    : null)
-                ->disabled(! $enrollment),
+                    ]));
+        } else {
+            $actions[] = Actions\Action::make('enroll')
+                ->label('Inscribirme a este curso')
+                ->icon('heroicon-o-user-plus')
+                ->color('warning')
+                ->action(function () {
+                $course = $this->record->module?->course;
 
-            Actions\EditAction::make(),
-        ];
+                if (! $course) {
+                    return;
+                }
+
+                // Create the enrollment using your standard parameters
+                $newEnrollment = Enrollment::create([
+                    'course_id'  => $course->id,
+                    'user_id'    => auth()->id(),
+                    'team_id'    => Filament::getTenant()?->id,
+                    'status'     => 'in_progress',
+                    'started_at' => now(),
+                ]);
+
+                Notification::make()
+                    ->title('Te has inscrito correctamente al curso')
+                    ->success()
+                    ->send();
+
+                // Instantly redirect them to start taking the current lesson
+                return redirect()->to(EnrollmentResource::getUrl('lesson', [
+                    'record' => $newEnrollment->getKey(),
+                    'lesson' => $this->record->getKey(),
+                ]));
+            });
+    }
+
+        $actions[] = Actions\EditAction::make();
+
+        return $actions;
     }
 
     protected function resolveEnrollment(): ?Enrollment

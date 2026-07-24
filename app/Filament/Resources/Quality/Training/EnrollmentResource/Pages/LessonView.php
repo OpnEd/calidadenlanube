@@ -35,6 +35,10 @@ class LessonView extends ViewRecord
         $this->record->loadMissing('course');
         $this->authorizeEnrollmentAccess($this->enrollment);
         $this->lesson = $this->resolveLesson();
+
+        if (! $this->lesson->active) {
+            abort(404); 
+        }
     }
 
     public function getTitle(): string
@@ -45,31 +49,6 @@ class LessonView extends ViewRecord
     protected function getHeaderActions(): array
     {
         $actions = [];
-
-        /* $enrollment = $this->resolveEnrollment();
-        
-        if ($enrollment) {
-            $assessment = $this->lesson->assessment;
-
-            if ($assessment) {
-                $actions[] = Action::make('realizar-assessment')
-                    ->label('Presentar evaluación')
-                    ->icon('heroicon-o-academic-cap')
-                    ->color('warning')
-                    ->url(fn (): string => EnrollmentResource::getUrl('lesson', [
-                        'record' => $enrollment->getKey(),
-                        'lesson' => $this->lesson->getKey(),
-                    ]));
-            } else {
-                $actions[] = Action::make('no-assessment')
-                    ->label('No hay evaluación para esta leccion')
-                    ->disabled();
-            }
-        } else {
-            $actions[] = Action::make('no-enrolled')
-                ->label('Debe inscribirse para realizar la evaluación')
-                ->disabled();
-        } */
 
         // Navigation and edit actions
         $module = $this->lesson->module ?? null;

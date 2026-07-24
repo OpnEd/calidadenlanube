@@ -129,6 +129,7 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::FOOTER,
                 fn(): string => Blade::render('@livewire(\'footer-text-component\')'),
-            );
+            )
+            ->breadcrumbs(false);
     }
 }

@@ -32,7 +32,17 @@ trait HasModuleFormAndTable
                             ->relationship(
                                 name: 'course',
                                 titleAttribute: 'title',
-                                modifyQueryUsing: fn(Builder $query) => $query->ownedByTeam(Filament::getTenant()?->id)
+                                modifyQueryUsing: function (Builder $query) {
+                                    $tenant = Filament::getTenant();
+
+                                    if ($tenant) {
+                                        // Tenant panel context: lock to the active team
+                                        $query->ownedByTeam($tenant->id);
+                                    } else {
+                                        // Admin panel context: fetch global courses
+                                        $query->whereNull('team_id');
+                                    }
+                                }
                             )
                             ->searchable()
                             ->preload()
@@ -226,7 +236,7 @@ trait HasModuleFormAndTable
                                             ->icon('heroicon-m-academic-cap')
                                             ->badge() // Badges make categorization instantly scannable
                                             ->color('info')
-                                            ->tooltip(fn ($state) => $state),
+                                            ->tooltip(fn($state) => $state),
 
                                         Grid::make(2)
                                             ->schema([

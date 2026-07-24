@@ -24,6 +24,7 @@ use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry\TextEntrySize;
 use Filament\Support\Enums\FontWeight;
+use Filament\Infolists\Components\ViewEntry;
 
 trait HasCourseFormAndTable
 {
@@ -134,18 +135,31 @@ trait HasCourseFormAndTable
 
                 Tables\Columns\TextColumn::make('title')
                     ->label('Título')
+                    ->weight('bold')
                     ->sortable()
                     ->searchable()
                     ->limit(30)
                     ->tooltip(function (Tables\Columns\TextColumn $column): ?string {
                         $state = $column->getState();
-
                         if (strlen($state) <= $column->getCharacterLimit()) {
                             return null;
                         }
-
-                        // Only render the tooltip if the column content exceeds the length limit.
                         return $state;
+                    }),
+
+                // --- New Enrollment Status Badge ---
+                Tables\Columns\TextColumn::make('enrollment_status')
+                    ->label('Mi Estado')
+                    ->badge()
+                    ->getStateUsing(
+                        fn($record) =>
+                        Enrollment::where('course_id', $record->id)
+                            ->where('user_id', auth()->id())
+                            ->exists() ? 'Inscrito' : 'No inscrito'
+                    )
+                    ->color(fn(string $state): string => match ($state) {
+                        'Inscrito' => 'success',
+                        'No inscrito' => 'gray',
                     }),
 
                 Tables\Columns\TextColumn::make('instructor.name')
@@ -162,12 +176,20 @@ trait HasCourseFormAndTable
 
                 Tables\Columns\TextColumn::make('level')
                     ->label('Nivel')
+                    ->badge() // Added badge for better visual hierarchy
                     ->formatStateUsing(fn($state) => match ($state) {
                         'beginner' => 'Principiante',
                         'intermediate' => 'Intermedio',
                         'advanced' => 'Avanzado',
                         'expert' => 'Experto',
-                        default => $state,
+                        default => ucfirst($state),
+                    })
+                    ->color(fn($state): string => match ($state) {
+                        'beginner' => 'info',
+                        'intermediate' => 'warning',
+                        'advanced' => 'danger',
+                        'expert' => 'primary',
+                        default => 'gray',
                     })
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -176,6 +198,7 @@ trait HasCourseFormAndTable
                     ->label('Duración')
                     ->suffix(' h')
                     ->numeric(0)
+                    ->alignCenter()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('price')
@@ -200,7 +223,7 @@ trait HasCourseFormAndTable
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Creado')
-                    ->dateTime()
+                    ->dateTime('d/m/Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
@@ -230,7 +253,6 @@ trait HasCourseFormAndTable
                         ->color('success')
                         ->hidden(
                             fn($record) =>
-                            // Ocultar si ya existe una inscripción del usuario en este curso
                             Enrollment::where('course_id', $record->id)
                                 ->where('user_id', auth()->id())
                                 ->exists()
@@ -240,19 +262,22 @@ trait HasCourseFormAndTable
                             Enrollment::create([
                                 'course_id' => $record->id,
                                 'user_id'   => auth()->id(),
-                                'team_id'   => Filament::getTenant()?->id, // opcional
+                                'team_id'   => Filament::getTenant()?->id,
                                 'status'    => 'in_progress',
                                 'started_at' => now(),
                             ])
-                        ),
+                        )
+                        ->successNotificationTitle('Te has inscrito correctamente'), // Added feedback
 
+                    Tables\Actions\ViewAction::make(),
                     Tables\Actions\EditAction::make(),
                     Tables\Actions\DeleteAction::make(),
-                    Tables\Actions\ViewAction::make(),
                 ])
             ], position: ActionsPosition::BeforeColumns)
             ->bulkActions([
-                //
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
             ])
             ->defaultSort('created_at', 'desc');
     }
@@ -264,25 +289,19 @@ trait HasCourseFormAndTable
                 Grid::make(['default' => 1, 'lg' => 3])
                     ->schema([
 
-                        // COLUMNA PRINCIPAL: Contenido Académico (Ocupa 2 columnas en pantallas grandes)
+                        // COLUMNA PRINCIPAL: Contenido Académico (Ocupa 2 columnas)
                         Group::make()
                             ->schema([
+                                // Sección de Información General
                                 Section::make()
                                     ->schema([
-                                        TextEntry::make('title')
-                                            ->hiddenLabel()
-                                            ->size(TextEntrySize::Large)
-                                            ->weight(FontWeight::Bold)
-                                            ->color('primary')
-                                            // Transforma el título en un verdadero encabezado H1 con clases Tailwind
-                                            ->extraAttributes(['class' => 'text-2xl md:text-3xl tracking-tight']),
 
                                         TextEntry::make('objective')
                                             ->label('Objetivo Principal')
                                             ->icon('heroicon-o-trophy')
                                             ->iconColor('warning')
                                             ->markdown()
-                                            ->prose(), // Aplica espaciado tipográfico elegante a listas y textos
+                                            ->prose(),
 
                                         TextEntry::make('description')
                                             ->label('Descripción Detallada')
@@ -290,6 +309,15 @@ trait HasCourseFormAndTable
                                             ->iconColor('primary')
                                             ->markdown()
                                             ->prose(),
+                                    ]),
+
+                                // NUEVA SECCIÓN: Estructura del Curso (Módulos y Lecciones)
+                                Section::make('Estructura del Curso')
+                                    ->icon('heroicon-o-academic-cap')
+                                    ->schema([
+                                        ViewEntry::make('curriculum')
+                                            ->hiddenLabel()
+                                            ->view('filament.pages.quality.training.course-curriculum'),
                                     ]),
                             ])
                             ->columnSpan(['default' => 1, 'lg' => 2]),
@@ -323,7 +351,6 @@ trait HasCourseFormAndTable
                                                 TextEntry::make('level')
                                                     ->label('Nivel')
                                                     ->badge()
-                                                    // Semántica de colores según la complejidad del nivel
                                                     ->color(fn(string $state): string => match ($state) {
                                                         'beginner' => 'success',
                                                         'intermediate' => 'warning',
@@ -367,7 +394,6 @@ trait HasCourseFormAndTable
                                             ->color('info'),
                                     ]),
 
-                                // Sección compacta de control administrativo/SaaS
                                 Section::make('Configuración y Visibilidad')
                                     ->icon('heroicon-o-cog-6-tooth')
                                     ->compact()

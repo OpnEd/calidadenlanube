@@ -105,23 +105,49 @@ class Enrollment extends Model
      */
     public function updateProgress(): void
     {
-        $totalLessons = $this->course?->lessons()->count() ?? 0;
+        // 1. Count ONLY active lessons in the Module/Course for progress calculation
+        $totalLessons = $this->course?->lessons()->where('lessons.active', true)->count() ?? 0;
+
+        // 2. Fetch enrollment tracking ONLY for active lessons
         $lessonProgress = $this->enrollmentLessons()
+            ->whereHas('lesson', fn($query) => $query->where('lessons.active', true))
             ->with(['lesson:id,completion_mode', 'approvedAttempt:id,score'])
             ->get();
-        $resolvedLessons = $lessonProgress->filter(fn (EnrollmentLesson $lesson) => $lesson->isResolved())->count();
+
+        // 3. Filter resolved lessons strictly by completion rules
+        $resolvedLessons = $lessonProgress->filter(function (EnrollmentLesson $el) {
+            $mode = $el->lesson?->completion_mode;
+
+            // Rule A: Consume-only lessons just need to be consumed
+            if ($mode === 'consumption_only') { // Adjust string/enum to match your system
+                return $el->consumed_at !== null;
+            }
+
+            // Rule B: Evaluation lessons must have a passing/approved attempt
+            if ($mode === 'assessment_required') { // Adjust string/enum to match your system
+                return $el->approvedAttempt !== null;
+            }
+
+            // Fallback to your model's native logic if there's any other mode
+            return $el->isResolved();
+        })->count();
+
+        // The calculations below now automatically ignore inactive lessons
         $hasActivity = $lessonProgress->contains(function (EnrollmentLesson $lesson): bool {
             return $lesson->status !== EnrollmentLesson::STATUS_NOT_STARTED
                 || $lesson->started_at !== null
                 || $lesson->last_accessed_at !== null
                 || $lesson->consumed_at !== null;
         });
+
         $finalScore = $this->calculateFinalScore($lessonProgress);
+
         $latestAccessedAt = $lessonProgress
             ->pluck('last_accessed_at')
             ->filter()
             ->sortDesc()
             ->first();
+            
         $startedAt = $lessonProgress
             ->pluck('started_at')
             ->filter()
@@ -172,7 +198,7 @@ class Enrollment extends Model
 
     public function percentageCompleted(): float
     {
-        $total = $this->course->lessons()->count();
+        $total = $this->course->lessons()->where('lessons.active', true)->count();
         $done = $this->lessonsCompleted()->count();
 
         return $total ? round(($done / $total) * 100, 2) : 0.0;
@@ -289,7 +315,7 @@ class Enrollment extends Model
                     && $lesson->status === EnrollmentLesson::STATUS_PASSED
                     && $lesson->approvedAttempt?->score !== null;
             })
-            ->map(fn (EnrollmentLesson $lesson) => (float) $lesson->approvedAttempt->score);
+            ->map(fn(EnrollmentLesson $lesson) => (float) $lesson->approvedAttempt->score);
 
         if ($scores->isEmpty()) {
             return null;

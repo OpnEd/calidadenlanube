@@ -43,7 +43,18 @@ trait HasLessonFormAndTable
                                 titleAttribute: 'title',
                                 modifyQueryUsing: fn(Builder $query) => $query->whereHas(
                                     'course',
-                                    fn(Builder $courseQuery) => $courseQuery->ownedByTeam(Filament::getTenant()?->id)
+                                    function (Builder $courseQuery) {
+                                        $tenant = Filament::getTenant();
+
+                                        if ($tenant) {
+                                            // Admin panel context: strict tenant scoping
+                                            $courseQuery->ownedByTeam($tenant->id);
+                                        } else {
+                                            // TenantManager panel context: strict global scoping
+                                            // Explicitly query courses that do not belong to a tenant
+                                            $courseQuery->whereNull('team_id');
+                                        }
+                                    }
                                 )
                             )
                             ->required(),
@@ -242,7 +253,13 @@ trait HasLessonFormAndTable
                                     ->icon('heroicon-o-check-circle')
                                     ->iconColor('success')
                                     ->schema([
-                                        RepeatableEntry::make('objectives')
+
+                                        TextEntry::make('objectives')
+                                            ->label('Objetivos de Aprendizaje')
+                                            ->hidden(fn($record) => empty($record->objectives))
+                                            ->bulleted()
+                                            ->listWithLineBreaks(),
+                                        /* RepeatableEntry::make('objectives')
                                             ->hiddenLabel()
                                             ->schema([
                                                 TextEntry::make('text') // Ajustar al nombre de tu columna (ej: 'text', 'description')
@@ -253,7 +270,7 @@ trait HasLessonFormAndTable
                                             ])
                                             ->grid(1) // Despliega los objetivos en una sola lista limpia
                                             ->placeholder('No se han definido objetivos específicos para esta lección.')
-                                            ->extraAttributes(['class' => 'filament-infolists-clean-repeatable']),
+                                            ->extraAttributes(['class' => 'filament-infolists-clean-repeatable']), */
                                     ])
                                     ->collapsible(),
                             ])
@@ -314,3 +331,17 @@ trait HasLessonFormAndTable
             ]);
     }
 }
+/**
+ * Here is the step-by-step breakdown of the modifyQueryUsing logic:
+ * modifyQueryUsing: fn(Builder $query) => $query->whereHas('course', ...)
+ * Since you are querying Modules, but your tenant isolation (team_id) lives on the Course table, you use whereHas. This tells Eloquent: "Only give me modules that belong to a course matching the following rules."
+ * 
+ * $tenant = Filament::getTenant();
+ * Filament checks the current URL/session. If a user is logged into the tenant panel (e.g., /app/...), this returns the Tenant model. If an admin is in the master admin panel (e.g., /admin/...), this returns null.
+ * 
+ * if ($tenant)
+ * If a tenant exists in the context, it applies your custom local scope ->ownedByTeam($tenant->id). This strictly locks the query so the user only sees modules belonging to their specific tenant.
+ * 
+ * else { $courseQuery->whereNull('team_id'); }
+ * If there is no tenant (meaning an admin is creating or editing something in the central panel), it explicitly queries only the "global" courses — courses that are not assigned to any specific team (team_id IS NULL).
+ */

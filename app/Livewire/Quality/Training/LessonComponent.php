@@ -16,39 +16,39 @@ use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\On;
 use Livewire\Component;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Infolists\Contracts\HasInfolists;
+use Filament\Infolists\Concerns\InteractsWithInfolists;
 use Illuminate\Support\Facades\Log;
+use Filament\Infolists\Infolist;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\TextEntry\TextEntrySize;
+use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Support\Enums\FontWeight;
+use Illuminate\Support\HtmlString;
 
-class LessonComponent extends Component
+class LessonComponent extends Component implements HasForms, HasInfolists
 {
+    use InteractsWithForms;
+    use InteractsWithInfolists;
+
     //public ?Enrollment $enrollment = null;
     public Enrollment $enrollment;
-
     public Lesson $lesson;
-
     public bool $hasPreviousLesson = false;
-
     public bool $hasNextLesson = false;
-
     public int $totalLessons = 0;
-
     public int $currentLessonPosition = 0;
-
     public array $lessonStatus = [];
-
     public ?Assessment $assessment = null;
-
     public ?int $remainingAttempts = null;
-
     public bool $lessonConsumed = false;
-
     public array $breadcrumbs = [];
-
     public ?AssessmentAttempt $latestAttempt = null;
-
     public bool $showAssessment = false;
-
     public bool $assessmentCanStart = false;
-
     public ?string $assessmentStartError = null;
 
     public function mount(Enrollment $enrollment, Lesson $lesson): void
@@ -60,9 +60,9 @@ class LessonComponent extends Component
         $this->lesson = $lesson->load([
             'module.course',
             'assessment.questions.questionOptions',
-            ]);
-            
-            //dd($this->lesson);
+        ]);
+
+        //dd($this->lesson);
         abort_unless($this->lesson->module?->course_id === $this->enrollment->course_id, 404);
 
         $this->updateNavigationState();
@@ -75,6 +75,119 @@ class LessonComponent extends Component
         $this->breadcrumbs = collect(
             BreadcrumbHelper::getTrainingBreadcrumbs($this->enrollment, $this->lesson->module, $this->lesson)
         )->mapWithKeys(fn($crumb) => [$crumb['url'] ?? '' => $crumb['label']])->toArray();
+    }
+
+    public function lessonInfolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->record($this->lesson)
+            ->schema([
+
+                // 1. Description
+                Section::make('Descripción')
+                    ->icon('heroicon-o-book-open')
+                    ->iconColor('primary')
+                    ->collapsible()
+                    ->schema([
+                        TextEntry::make('description')
+                            ->hiddenLabel()
+                            ->markdown()
+                            ->prose()
+                            ->hidden(fn($record) => empty($record->description))
+                    ]),
+
+                // 2. Objectives
+                Section::make('Objetivos de Aprendizaje')
+                    ->icon('phosphor-target')
+                    ->iconColor('primary')
+                    ->collapsible()
+                    ->schema([
+                        // Using bulleted() natively handles flat arrays from simple() repeaters
+                        TextEntry::make('objectives')
+                            ->hiddenLabel()
+                            ->hidden(fn($record) => empty($record->objectives))
+                            ->bulleted()
+                            ->listWithLineBreaks(),
+                    ]),
+
+                // 3. Core Content Section
+                Section::make('Desarrollo')
+                    ->icon('phosphor-eyeglasses')
+                    ->iconColor('primary')
+                    ->collapsible()
+                    ->schema([
+
+                        TextEntry::make('introduction')
+                            ->label('Introducción')
+                            ->html() // Changed to HTML since your form uses RichEditor
+                            ->prose()
+                            ->hidden(fn($record) => empty($record->introduction)),
+
+                        TextEntry::make('content')
+                            ->label('Material de Estudio')
+                            ->html()
+                            ->prose()
+                            ->hidden(fn($record) => empty($record->content))
+                            ->getStateUsing(function ($record) {
+                                // Since it's a simple() repeater of RichEditors, we merge the flat array of HTML strings
+                                return is_array($record->content)
+                                    ? implode('<br><br>', $record->content)
+                                    : $record->content;
+                            }),
+                    ]),
+
+                // 4. Conclusions and References Section
+                Section::make('Conclusiones y Referencias')
+                    ->icon('phosphor-arrow-bend-double-up-right')
+                    ->iconColor('success')
+                    ->collapsible()
+                    ->schema([
+
+                        TextEntry::make('conclusions')
+                            ->label('Conclusiones')
+                            ->hidden(fn($record) => empty($record->conclusions))
+                            ->bulleted()
+                            ->listWithLineBreaks(),
+
+                        TextEntry::make('references')
+                            ->label('Referencias')
+                            ->hidden(fn($record) => empty($record->references))
+                            ->getStateUsing(function ($record) {
+                                $references = $record->references;
+
+                                if (! is_array($references) || empty($references)) {
+                                    return null;
+                                }
+
+                                $html = '<ul class="list-disc pl-5 space-y-2">';
+
+                                foreach ($references as $ref) {
+                                    // Safely extract text and url, handling potential flat strings or arrays
+                                    $text = is_array($ref) ? ($ref['text'] ?? 'Referencia') : $ref;
+                                    $url = is_array($ref) ? ($ref['url'] ?? null) : null;
+
+                                    if ($url) {
+                                        $html .= "<li>
+                            <a href='{$url}' target='_blank' rel='noopener noreferrer' class='text-primary-600 dark:text-primary-400 font-medium hover:underline'>
+                                {$text}
+                            </a>
+                          </li>";
+                                    } else {
+                                        $html .= "<li>
+                            <span class='text-gray-700 dark:text-gray-300'>
+                                {$text}
+                            </span>
+                          </li>";
+                                    }
+                                }
+
+                                $html .= '</ul>';
+
+                                // Wrap in HtmlString so Filament trusts and renders the raw HTML tags
+                                return new HtmlString($html);
+                            }),
+                    ]),
+            ]);
     }
 
     public function render()
@@ -250,8 +363,6 @@ class LessonComponent extends Component
             $this->enrollment,
             auth()->user()
         );
-
-        
     }
 
     protected function getOrderedLessons(): Collection
@@ -268,7 +379,11 @@ class LessonComponent extends Component
 
     protected function getAdjacentLesson(int $offset): ?Lesson
     {
-        $lessons = $this->getOrderedLessons();
+        // Filter for active lessons and reset keys so they are consecutive (0, 1, 2...)
+        $lessons = $this->getOrderedLessons()
+            ->where('active', true)
+            ->values();
+            
         $currentIndex = $lessons->search(fn(Lesson $lesson) => $lesson->id === $this->lesson->id);
 
         if ($currentIndex === false) {
